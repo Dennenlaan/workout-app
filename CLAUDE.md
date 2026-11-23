@@ -41,7 +41,15 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
    spraak. Pauze/hervat, ⏮/⏭, ✕ stoppen. Werktijd herhalingsoefeningen 30/40/50/60 s
    (`settings.pilatesWork`); tijd-oefeningen gebruiken hun eigen `sec`.
    Probeert de Fullscreen API (Android); op iPhone vult de speler het scherm (`position: fixed`).
-3. **Basic-Fit** (`view: 'gym'`): Armen (zonder bankje, ⇄ alternatieven), Full Body, Bil 1/2/3
+3. **Basic-Fit** (`view: 'gym'`): **geen rustbalk/rusttimer** in Basic-Fit-sessies (bewuste keuze:
+   `showTimer` en `toggleSet` slaan `program === 'gym'` over; thuis met dumbbell/kettlebell heeft hem wél).
+   **Slim wisselen** (`swapOptions(entry)`): "Beste alternatieven" (`alts` van oorspronkelijke + huidige
+   oefening) en "Meer voor <spiergroep>" (zelfde `muscleFamily()`), **nooit oefeningen die al in de sessie
+   staan**. Wisselen tussen eenzijdig en tweezijdig zet de sets om (`convertSets`). Werkt ook voor
+   dumbbell/kettlebell-sessies.
+   Leg press-varianten: 2 voeten hoog; 1 been voet middelhoog L/R (`bf-sl-leg-press`/`-r`); 1 been voet
+   hoog L/R (`bf-lp-sl-high-L/R`); schuin zittend (45°) 1 been bilspier L/R (`bf-lp45-sl-L/R`).
+   Schema's: Armen (zonder bankje, ⇄ alternatieven), Full Body, Bil 1/2/3
    (elk 7 oefeningen), kg + reps per set, sets bewerkbaar. **Bil-schema's per bilspier** met
    spier-badge (`template.focus`, groene markering via `gluteSVG()`):
    Bil 1 = gluteus **maximus**, Bil 2 = gluteus **medius** (zijkant), Bil 3 = gluteus **minimus** (diep).
@@ -54,7 +62,12 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
    (**Linkerbeen**) en `bf-sl-leg-press-r` (**Rechterbeen**) met `side: 'L'|'R'`-badge,
    `bf-seated-leg-curl` (hamstrings, beenbuig-apparaat). v6 voegde ±13 extra (vooral bil-)oefeningen
    toe; `GYM_EXTRA_ALTS` koppelt ze als ⇄-alternatief aan de schema-oefeningen (apparaat bezet → wisselen).
-   Catalogus v6: 117 oefeningen (gym 66, waarvan 37 bil; pilatesbord 18; mat 13; dumbbell 12; kettlebell 8).
+   Catalogus v7: **147 oefeningen** (gym 80 incl. apparaten voor armen/borst/rug/benen en ±32 bil; pilatesbord
+   18; mat 13; dumbbell 28; kettlebell 8). De dumbbell-lijst van de gebruiker (sumo/goblet/Bulgarian squat,
+   walking lunges, RDL, step-ups, (single-leg) hip thrust, crunches, weighted marches, plank drags, glute
+   bridge met overhead stretch, alternating glute bridge, bicycle crunches, bent-over/single-arm/renegade
+   row, pullover, bicep/hammer curl, shoulder press, lateral raises, dumbbell press, overhead triceps,
+   triceps met bankje) staat volledig onder `program: 'dumbbell'` (5 schema's incl. "Buik & core").
 
 **Eenzijdige oefeningen** (`UNI` in data.js → `exercise.uni = 'been'|'arm'|'kant'`): in de set-tracker
 krijgt elke set een L- én R-rij (`set.side`), gelabeld "Linkerbeen"/"Rechterbeen" (blauw/oranje), met
@@ -231,6 +244,11 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v7 (2026-11-23)**: Basic-Fit zonder rustbalk; slim wisselen (geen dubbele oefeningen, alternatieven
+  per spiergroep, L/R-omzetting); 7 leg press-varianten (voet hoog/middelhoog, 1 of 2 benen, schuin
+  zittend, Linker-/Rechterbeen); apparaten biceps/triceps-machine, pec deck, incline press, low row,
+  smalle pulldown, hack squat, calf raise, kneeling cable kickback; dumbbell-lijst aangevuld (16 nieuw,
+  "Lunge" → "Walking lunges"), dumbbell-schema's uitgebreid naar 5. Cache v7.
 - **v6 (2026-11-23)**: Thuis trainen in 4 keuzes (pilates met bord, **pilates op matje** (13 oef., 3
   niveaus), **dumbbell** (12 oef., 3 schema's), **kettlebell** (8 oef., 2 schema's)); speler met
   wisseltijd tussen oefeningen, kant-wissel en 3-2-1-aftellen met piepjes; L/R-rijen voor eenzijdige

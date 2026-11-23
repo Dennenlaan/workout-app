@@ -460,7 +460,8 @@ function render() {
     : renderers[view]();
   document.body.classList.toggle('player-open', isPlayer);
   if (!isPlayer) exitFullscreen();
-  const showTimer = view === 'workout' && !timed;
+  // Basic-Fit: geen rustbalk (bewuste keuze); thuis met dumbbell/kettlebell wel
+  const showTimer = view === 'workout' && !timed && db.active?.program !== 'gym';
   timerEl.hidden = !showTimer;
   document.body.classList.toggle('has-timer', showTimer);
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -1006,7 +1007,7 @@ function renderEntry(entry) {
           ${entry.target ? `<p class="target">🎯 ${setsPerSide(entry)} × ${esc(entry.target)}</p>` : ''}
           <div class="ex-actions">
             <button class="chip small-chip" data-action="ex-info" data-id="${esc(entry.exerciseId)}">ⓘ Uitleg</button>
-            ${entry.alts ? `<button class="chip small-chip" data-action="swap">⇄ Wissel</button>` : ''}
+            ${swapOptions(entry).all.length ? `<button class="chip small-chip" data-action="swap">⇄ Wissel</button>` : ''}
           </div>
         </div>
       </div>
@@ -1068,6 +1069,7 @@ const HOLD_SHAPES = {
   pad: '<rect class="w-pad" x="-5" y="-5" width="10" height="10" rx="4"/>',
   bar: '<rect class="w-bar" x="-12" y="-2" width="24" height="4" rx="2"/>',
   footplate: '<rect class="w-plate" x="2" y="-22" width="6" height="44" rx="2"/>',
+  footplate45: '<rect class="w-plate" x="2" y="-22" width="6" height="44" rx="2" transform="rotate(-45)"/>',
 };
 
 function expandFrame(f) {
@@ -1352,8 +1354,54 @@ function addExerciseToWorkout(exerciseId) {
   render();
   requestAnimationFrame(() => [...app.querySelectorAll('.exercise')].pop()?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
 }
+/** Hoofdspiergroep ("familie") uit het spier-label, bv. "Biceps & onderarm" → "Biceps". */
+const MUSCLE_FAMILIES = ['Achterkant schouders', 'Voorkant bovenbeen', 'Binnenkant bovenbeen', 'Heupbuigers',
+  'Biceps', 'Triceps', 'Schouders', 'Rug', 'Borst', 'Bil', 'Hamstrings', 'Buik', 'Kuiten', 'Core', 'Zij-buik'];
+function muscleFamily(m) {
+  if (!m) return null;
+  const s = m.toLowerCase();
+  return MUSCLE_FAMILIES.find((f) => s.startsWith(f.toLowerCase())) || null;
+}
+
+/**
+ * Wisselopties voor een oefening in de lopende sessie:
+ * - "best": vaste alternatieven (`alts`) van de oorspronkelijke en de huidige oefening;
+ * - "more": alle andere oefeningen (zelfde programma) met dezelfde hoofdspiergroep.
+ * Oefeningen die al in het schema staan worden NIET getoond (geen dubbele oefeningen).
+ */
+function swapOptions(entry) {
+  const a = db.active;
+  if (!a || !['gym', 'dumbbell', 'kettlebell'].includes(a.program)) return { best: [], more: [], all: [] };
+  const cur = exById(entry.exerciseId);
+  const inSession = new Set(a.exercises.map((e) => e.exerciseId));
+  const ok = (id) => id !== entry.exerciseId && !inSession.has(id) && exById(id)?.program === a.program;
+  const best = [...new Set([...(entry.alts || []), ...(cur?.alts || [])])].filter(ok);
+  const fam = muscleFamily(cur?.muscle);
+  const more = fam
+    ? exercisesFor(a.program).filter((e) => muscleFamily(e.muscle) === fam && ok(e.id) && !best.includes(e.id))
+      .sort((x, y) => (x.muscle === cur.muscle ? -1 : 0) - (y.muscle === cur.muscle ? -1 : 0) || byName(x, y)).map((e) => e.id)
+    : [];
+  return { best, more, all: [...best, ...more] };
+}
+
 function openSwap(entry) {
   const cur = exById(entry.exerciseId);
+  const { best, more } = swapOptions(entry);
+  const fam = muscleFamily(cur?.muscle);
+  const opt = (id) => {
+    const ex = exById(id);
+    const same = ex?.muscle && ex.muscle === cur?.muscle;
+    const sameFam = !same && fam && muscleFamily(ex?.muscle) === fam;
+    return `
+      <button class="pick swap-opt" data-action="swap-to" data-entry-id="${esc(entry.id)}" data-id="${esc(id)}">
+        ${thumb(id, { animate: false })}
+        <span class="grow">
+          <span class="pick-name">${esc(ex?.name ?? id)}</span>
+          ${ex?.muscle ? `<span class="muscle-pill">💪 ${esc(ex.muscle)}</span>` : ''}
+          <span class="swap-tag ${same || sameFam ? 'same' : 'diff'}">${same ? '✓ zelfde spiergroep' : sameFam ? `✓ ook ${esc(fam.toLowerCase())}` : '↺ andere focus'}</span>
+        </span>
+      </button>`;
+  };
   openSheet(`
     <div class="sheet-inner">
       ${sheetHead('Wissel oefening')}
@@ -1362,23 +1410,22 @@ function openSwap(entry) {
         <strong>${esc(cur?.name ?? entry.name)}</strong>
         ${cur?.muscle ? `<span class="muscle-pill">💪 ${esc(cur.muscle)}</span>` : ''}
       </div>
-      <p class="muted small">Kies een alternatief. Bij elke optie zie je welke spiergroep je het meest traint. Je ingevulde sets blijven staan.</p>
-      <div class="pick-list">
-        ${entry.alts.filter((id) => id !== entry.exerciseId).map((id) => {
-          const ex = exById(id);
-          const same = ex?.muscle && ex.muscle === cur?.muscle;
-          return `
-          <button class="pick swap-opt" data-action="swap-to" data-entry-id="${esc(entry.id)}" data-id="${esc(id)}">
-            ${thumb(id, { animate: false })}
-            <span class="grow">
-              <span class="pick-name">${esc(ex?.name ?? id)}</span>
-              ${ex?.muscle ? `<span class="muscle-pill">💪 ${esc(ex.muscle)}</span>` : ''}
-              <span class="swap-tag ${same ? 'same' : 'diff'}">${same ? '✓ zelfde spiergroep' : '↺ andere focus'}</span>
-            </span>
-          </button>`;
-        }).join('')}
-      </div>
+      <p class="muted small">Apparaat bezet? Kies een vervanger. Oefeningen die al in je schema staan zie je hier niet.
+      Je ingevulde sets blijven staan.</p>
+      ${best.length ? `<p class="label">Beste alternatieven</p><div class="pick-list">${best.map(opt).join('')}</div>` : ''}
+      ${more.length ? `<p class="label">Meer voor ${esc((fam || '').toLowerCase())}</p><div class="pick-list">${more.map(opt).join('')}</div>` : ''}
+      ${!best.length && !more.length ? '<p class="muted">Geen vrije alternatieven meer: alles voor deze spiergroep staat al in je schema.</p>' : ''}
     </div>`);
+}
+
+/** Bij wisselen tussen eenzijdig (L/R) en tweezijdig de set-structuur omzetten. */
+function convertSets(entry, newUni) {
+  if (!!entry.uni === !!newUni) return;
+  if (newUni) {
+    entry.sets = entry.sets.flatMap((s) => [{ ...s, side: 'L' }, emptySet('R')]);
+  } else {
+    entry.sets = entry.sets.filter((s) => s.side !== 'R').map(({ side, ...rest }) => rest);
+  }
 }
 
 /* ---------- Schema-editor (Basic-Fit) ---------- */
@@ -1631,7 +1678,7 @@ function toggleSet(entry, i) {
       }
     }
     s.done = true;
-    startTimer(restFor(), 'Rust');
+    if (db.active.program !== 'gym') startTimer(restFor(), 'Rust');
     navigator.vibrate?.(30);
   } else {
     s.done = false;
@@ -2115,7 +2162,11 @@ async function handleAction(action, btn) {
     case 'swap-to': {
       const target = db.active?.exercises.find((x) => x.id === btn.dataset.entryId);
       const ex = exById(btn.dataset.id);
-      if (target && ex) { target.exerciseId = ex.id; target.name = ex.name; saveNow(); }
+      if (target && ex) {
+        convertSets(target, ex.uni);
+        target.exerciseId = ex.id; target.name = ex.name; target.kind = ex.kind || 'weights'; target.uni = ex.uni || null;
+        saveNow();
+      }
       closeSheet(); render();
       if (ex) toast(`Gewisseld${ex.muscle ? ` · traint nu: ${ex.muscle}` : ''}`);
       break;

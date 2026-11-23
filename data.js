@@ -191,6 +191,60 @@ const POSES = {
   'g-slrdl': { holds: [{ at: 'w', t: 'db' }], dur: 3.2, frames: [
     fr({ h: [100, 22], n: [100, 36], p: [100, 72], e: [102, 54], w: [103, 70], k: [97, 98], f: [93, 121], k2: [101, 98], f2: [100, 124] }),
     fr({ h: [141, 55], n: [128, 60], p: [96, 72], e: [128, 75], w: [128, 90], k: [72, 72], f: [47, 70], k2: [101, 98], f2: [100, 124] })] },
+  /* ----- v7: dumbbell-lijst, apparaten en leg press-varianten ----- */
+  'g-dbhipthrust': { props: EQ.bench(14, 52, 92), holds: [{ at: 'p', t: 'db', dy: -8 }], dur: 2.6, frames: [
+    fr({ h: [40, 82], n: [50, 90], p: [82, 112], e: [64, 100], w: [78, 104], k: [104, 96], f: [110, 124] }),
+    fr({ h: [40, 82], n: [50, 90], p: [86, 90], e: [66, 84], w: [82, 82], k: [108, 96], f: [110, 124] })] },
+  'g-crunch': { dur: 2.2, frames: [
+    fr({ h: [40, 114], n: [54, 118], p: [90, 120], e: [46, 108], w: [34, 110], k: [110, 98], f: [124, 122] }),
+    fr({ h: [56, 96], n: [64, 106], p: [90, 120], e: [60, 98], w: [50, 92], k: [110, 98], f: [124, 122] })] },
+  'g-bicycle': { dur: 1.8, frames: [
+    fr({ h: [46, 104], n: [56, 110], p: [90, 118], e: [50, 98], w: [42, 100], k: [104, 96], f: [124, 104], k2: [114, 112], f2: [140, 112] }),
+    fr({ h: [46, 104], n: [56, 110], p: [90, 118], e: [50, 98], w: [42, 100], k: [114, 112], f: [140, 112], k2: [104, 96], f2: [124, 104] })] },
+  'g-march': { holds: [{ at: 'w', t: 'db' }], dur: 1.6, frames: [
+    fr({ ...ST, e: [101, 54], w: [102, 70], k: [124, 74], f: [122, 100], k2: [100, 98], f2: [100, 124] }),
+    fr({ ...ST, e: [101, 54], w: [102, 70], k: [101, 98], f: [100, 124], k2: [124, 74], f2: [122, 100] })] },
+  'g-plankdrag': { holds: [{ at: 'w2', t: 'db' }], dur: 2.4, frames: [
+    fr({ h: [138, 90], n: [126, 96], p: [92, 106], e: [127, 110], w: [128, 124], k: [66, 113], f: [40, 122], e2: [127, 110], w2: [128, 124] }),
+    fr({ h: [138, 90], n: [126, 96], p: [92, 106], e: [127, 110], w: [128, 124], k: [66, 113], f: [40, 122], e2: [116, 110], w2: [104, 120] })] },
+  'g-bridge-oh': { holds: [{ at: 'w', t: 'db' }], dur: 2.6, frames: [
+    [40, 116, 53, 118, 89, 120, 30, 121, 16, 120, 108, 98, 124, 122],
+    [40, 116, 53, 118, 86, 98, 30, 121, 16, 120, 112, 96, 124, 122]] },
+  'g-pullover': { props: EQ.bench(26, 100, 100), holds: [{ at: 'w', t: 'db' }], dur: 2.8, frames: [
+    fr({ h: [40, 86], n: [52, 92], p: [88, 94], e: [38, 96], w: [24, 100], k: [108, 100], f: [112, 124] }),
+    fr({ h: [40, 86], n: [52, 92], p: [88, 94], e: [56, 78], w: [60, 64], k: [108, 100], f: [112, 124] })] },
+  'g-dbbench': { props: EQ.bench(26, 100, 100), holds: [{ at: 'w', t: 'db' }], dur: 2.4, frames: [
+    fr({ h: [40, 86], n: [52, 92], p: [88, 94], e: [48, 104], w: [54, 90], k: [108, 100], f: [112, 124] }),
+    fr({ h: [40, 86], n: [52, 92], p: [88, 94], e: [54, 78], w: [56, 63], k: [108, 100], f: [112, 124] })] },
+  'g-skull': { props: EQ.bench(26, 100, 100), holds: [{ at: 'w', t: 'db' }], dur: 2.4, frames: [
+    fr({ h: [40, 86], n: [52, 92], p: [88, 94], e: [54, 77], w: [42, 84], k: [108, 100], f: [112, 124] }),
+    fr({ h: [40, 86], n: [52, 92], p: [88, 94], e: [54, 77], w: [56, 62], k: [108, 100], f: [112, 124] })] },
+  'g-renegade': { holds: [{ at: 'w', t: 'db' }, { at: 'w2', t: 'db' }], dur: 2.4, frames: [
+    fr({ h: [138, 90], n: [126, 96], p: [92, 106], e: [127, 110], w: [128, 124], k: [66, 113], f: [40, 122], e2: [127, 110], w2: [128, 124] }),
+    fr({ h: [138, 90], n: [126, 96], p: [92, 106], e: [112, 100], w: [120, 112], k: [66, 113], f: [40, 122], e2: [127, 110], w2: [128, 124] })] },
+  'g-machinecurl': { props: EQ.seat(86, 98, false) + '<polygon class="eq" points="94,66 118,74 116,80 92,72"/>', holds: [{ at: 'w', t: 'grip' }], dur: 2.4, frames: [
+    fr({ ...SE, h: [94, 46], n: [90, 60], e: [104, 68], w: [118, 74] }),
+    fr({ ...SE, h: [94, 46], n: [90, 60], e: [104, 68], w: [102, 54] })] },
+  'g-calf': { props: '<rect class="eq" x="90" y="120" width="24" height="5" rx="2"/>', holds: [{ at: 'w', t: 'grip' }], dur: 2, frames: [
+    fr({ h: [100, 18], n: [100, 32], p: [100, 68], e: [101, 50], w: [102, 66], k: [101, 94], f: [100, 120] }),
+    fr({ h: [100, 10], n: [100, 24], p: [100, 60], e: [101, 42], w: [102, 58], k: [101, 86], f: [102, 114] })] },
+  'g-kneelkick': { props: EQ.tower(12, 118), cables: [{ from: [17, 118], to: 'f' }], holds: [{ at: 'f', t: 'pad' }], dur: 2.4, frames: [
+    fr(QUAD), fr({ ...QUAD, k: [64, 88], f: [40, 80] })] },
+  // Leg press: voet hoog op het platform (meer bil/hamstring), één been en twee benen
+  'g-sllp-high': { props: '<rect class="eq" x="36" y="114" width="130" height="7" rx="3"/><polygon class="eq" points="30,70 38,64 66,102 58,108"/><rect class="eq" x="56" y="102" width="36" height="8" rx="3"/>',
+    holds: [{ at: 'f', t: 'footplate', dy: 6 }], dur: 3, frames: [
+    fr({ h: [42, 63], n: [50, 74], p: [74, 100], e: [60, 90], w: [72, 100], k: [88, 78], f: [112, 70], k2: [96, 100], f2: [100, 122] }),
+    fr({ h: [42, 63], n: [50, 74], p: [74, 100], e: [60, 90], w: [72, 100], k: [96, 84], f: [122, 76], k2: [96, 100], f2: [100, 122] })] },
+  'g-lp-high': { props: '<rect class="eq" x="36" y="114" width="130" height="7" rx="3"/><polygon class="eq" points="30,70 38,64 66,102 58,108"/><rect class="eq" x="56" y="102" width="36" height="8" rx="3"/>',
+    holds: [{ at: 'f', t: 'footplate', dy: 6 }], dur: 3, frames: [
+    fr({ h: [42, 63], n: [50, 74], p: [74, 100], e: [60, 90], w: [72, 100], k: [88, 78], f: [112, 70] }),
+    fr({ h: [42, 63], n: [50, 74], p: [74, 100], e: [60, 90], w: [72, 100], k: [96, 84], f: [122, 76] })] },
+  // Schuin zittend (45°-leg press) met één been, voet hoog = bilspier
+  'g-lp45-sl': { props: '<polygon class="eq" points="72,104 150,26 158,34 80,112"/><polygon class="eq" points="22,62 30,56 64,104 56,110"/><rect class="eq" x="40" y="112" width="60" height="8" rx="3"/>',
+    holds: [{ at: 'f', t: 'footplate45' }], dur: 3, frames: [
+    fr({ h: [30, 70], n: [38, 80], p: [60, 104], e: [48, 96], w: [60, 102], k: [59, 78], f: [85, 79], k2: [82, 110], f2: [88, 124] }),
+    fr({ h: [30, 70], n: [38, 80], p: [60, 104], e: [48, 96], w: [60, 102], k: [78, 86], f: [96, 68], k2: [82, 110], f2: [88, 124] })] },
+
   /* ----- v6: extra houdingen ----- */
   'g-goblet': { holds: [{ at: 'w', t: 'db', dy: 2 }], dur: 2.8, frames: [
     [100, 22, 100, 36, 100, 72, 110, 48, 106, 38, 101, 98, 100, 124],
@@ -274,6 +328,8 @@ const POSES = {
 // Afgeleide houdingen (omgekeerde beweging)
 POSES['g-adduction'] = { ...POSES['g-abduction'], frames: [...POSES['g-abduction'].frames].reverse() };
 POSES['g-legext'] = { ...POSES['g-seatedlegcurl'], holds: [{ at: 'f', t: 'pad', dy: 3 }], frames: [...POSES['g-seatedlegcurl'].frames].reverse() };
+POSES['g-machinetri'] = { ...POSES['g-machinecurl'], frames: [...POSES['g-machinecurl'].frames].reverse() };
+POSES['g-pecdeck'] = { ...POSES['g-revfly'], frames: [...POSES['g-revfly'].frames].reverse() };
 
 /** Eenzijdige oefeningen: per set eerst links, dan rechts. Waarde = welk lichaamsdeel ('been' | 'arm' | 'kant'). */
 const UNI = {
@@ -288,8 +344,10 @@ const UNI = {
   'bf-side-plank-raise': 'kant', 'bf-fire-hydrant': 'been', 'bf-clamshell': 'been', 'bf-sl-hip-thrust': 'been',
   'bf-band-walk': 'kant', 'bf-step-up': 'been', 'bf-smith-lunge': 'been', 'bf-donkey-kick': 'been', 'bf-b-stance-rdl': 'been',
   'bf-cable-lateral': 'arm', 'bf-db-kickback': 'arm',
+  'bf-kneel-kickback': 'been',
   // Thuis
   'hd-lunge': 'been', 'hd-sl-rdl': 'been', 'hk-sl-rdl': 'been', 'hk-lunge': 'been', 'hk-row': 'arm', 'hk-press': 'arm',
+  'hd-bulgarian': 'been', 'hd-step-up': 'been', 'hd-sl-hip-thrust': 'been', 'hd-single-row': 'arm', 'hd-renegade': 'arm',
 };
 
 /* ---------- Thuis trainen: Action-pilatesbord ----------
@@ -485,7 +543,7 @@ const HOME_EXERCISES = [
   // Dumbbell
   { id: 'hd-goblet', program: 'dumbbell', name: 'Goblet squat', pose: 'g-goblet', muscle: 'Voorkant bovenbeen & bil', tip: 'Dumbbell tegen je borst, borst omhoog, zak tot je bovenbenen parallel zijn.', alts: ['hd-sumo'] },
   { id: 'hd-rdl', program: 'dumbbell', name: 'Romanian deadlift', pose: 'g-rdl-db', muscle: 'Hamstrings & bil', tip: 'Billen naar achteren, rug recht, dumbbells langs je benen.', alts: ['hd-sl-rdl'] },
-  { id: 'hd-lunge', program: 'dumbbell', name: 'Lunge (dumbbells)', pose: 'g-lunge-db', muscle: 'Bil & voorkant bovenbeen', tip: 'Grote stap, voorste knie boven je enkel, achterste knie richting vloer.' },
+  { id: 'hd-lunge', program: 'dumbbell', name: 'Walking lunges (dumbbells)', pose: 'g-lunge-db', muscle: 'Bil & voorkant bovenbeen', tip: 'Grote stappen vooruit (of op de plaats als je weinig ruimte hebt); voorste knie boven je enkel.' },
   { id: 'hd-bridge', program: 'dumbbell', name: 'Glute bridge met dumbbell', pose: 'g-dbbridge', muscle: 'Bil (gluteus maximus)', tip: 'Dumbbell op je heupen vasthouden; bovenin 1 tel knijpen.' },
   { id: 'hd-sl-rdl', program: 'dumbbell', name: 'Single-leg RDL (dumbbell)', pose: 'g-slrdl', muscle: 'Hamstrings & bil', tip: 'Heupen recht, standbeen licht gebogen, rug recht.', alts: ['hd-rdl'] },
   { id: 'hd-sumo', program: 'dumbbell', name: 'Sumo squat (dumbbell)', pose: 'g-sumo', muscle: 'Bil & binnenkant bovenbeen', tip: 'Brede stand, tenen naar buiten, knieën naar buiten duwen.', alts: ['hd-goblet'] },
@@ -495,6 +553,23 @@ const HOME_EXERCISES = [
   { id: 'hd-triceps', program: 'dumbbell', name: 'Overhead triceps extension', pose: 'g-ohdb', muscle: 'Triceps', tip: 'Ellebogen naast je hoofd, alleen je onderarmen bewegen.' },
   { id: 'hd-lateral', program: 'dumbbell', name: 'Lateral raise', pose: 'g-lateral', muscle: 'Schouders (zijkant)', tip: 'Licht gewicht, til tot schouderhoogte.' },
   { id: 'hd-floorpress', program: 'dumbbell', name: 'Floor press (op de grond)', pose: 'g-floorpress', muscle: 'Borst & triceps', tip: 'Lig op je rug, ellebogen raken net de grond, druk recht omhoog.' },
+  // v7: aangevuld vanuit de dumbbell-lijst
+  { id: 'hd-bulgarian', program: 'dumbbell', name: 'Bulgarian split squat', pose: 'g-bulgarian', muscle: 'Bil & voorkant bovenbeen', tip: 'Achterste voet op bank of stoel; iets voorover leunen = meer bil.' },
+  { id: 'hd-step-up', program: 'dumbbell', name: 'Step-ups', pose: 'g-latstep', muscle: 'Bil & voorkant bovenbeen', tip: 'Stevige traptrede of bank; duw via de hiel van je bovenste been, niet afzetten met het onderste.' },
+  { id: 'hd-hip-thrust', program: 'dumbbell', name: 'Hip thrust (dumbbell)', pose: 'g-dbhipthrust', muscle: 'Bil (gluteus maximus)', tip: 'Schouders tegen de bank, dumbbell op je heupen; kin naar je borst, bovenin 1 tel knijpen.' },
+  { id: 'hd-sl-hip-thrust', program: 'dumbbell', name: 'Single-leg hip thrust', pose: 'g-slhipthrust', muscle: 'Bil (gluteus maximus & minimus)', tip: 'Eén voet plat, ander been omhoog; bekken recht houden.' },
+  { id: 'hd-crunch', program: 'dumbbell', name: 'Crunches', pose: 'g-crunch', muscle: 'Buik', tip: 'Onderrug blijft op de grond; krul je schouders op vanuit je buik, niet aan je nek trekken. Zwaarder: dumbbell op je borst.' },
+  { id: 'hd-march', program: 'dumbbell', name: 'Weighted marches', pose: 'g-march', muscle: 'Heupbuigers & core', tip: 'Dumbbells langs je zij, rechtop; om en om een knie rustig tot heuphoogte optillen.' },
+  { id: 'hd-plank-drag', program: 'dumbbell', name: 'Plank drags', pose: 'g-plankdrag', muscle: 'Buik (core) & schouders', tip: 'Hoge plank, dumbbell naast je; trek hem met de andere hand onder je door. Heupen stil houden.' },
+  { id: 'hd-bridge-oh', program: 'dumbbell', name: 'Glute bridge met overhead stretch', pose: 'g-bridge-oh', muscle: 'Bil & core', tip: 'Dumbbell met gestrekte armen boven je hoofd op de grond; bridge omhoog zonder je rug hol te trekken.' },
+  { id: 'hd-alt-bridge', program: 'dumbbell', name: 'Alternating glute bridge', pose: 'm-slbridge', muscle: 'Bil & hamstrings', tip: 'Bovenin de bridge om en om een been strekken; bekken blijft recht.' },
+  { id: 'hd-bicycle', program: 'dumbbell', name: 'Bicycle crunches', pose: 'g-bicycle', muscle: 'Buik (schuine buikspieren)', tip: 'Elleboog naar de tegenovergestelde knie, rustig fietsen; onderrug op de grond.' },
+  { id: 'hd-single-row', program: 'dumbbell', name: 'Single arm row', pose: 'g-dbrow', muscle: 'Rug', tip: 'Hand en knie op bank of stoel; trek de dumbbell naar je heup, schouder laag.' },
+  { id: 'hd-pullover', program: 'dumbbell', name: 'Dumbbell pullover', pose: 'g-pullover', muscle: 'Rug (lats) & borst', tip: 'Lig op de bank, armen licht gebogen; dumbbell in een boog achter je hoofd en terug boven je borst.' },
+  { id: 'hd-renegade', program: 'dumbbell', name: 'Renegade row', pose: 'g-renegade', muscle: 'Rug & core', tip: 'Hoge plank op de dumbbells, voeten breed; om en om een dumbbell naar je heup trekken zonder te draaien.' },
+  { id: 'hd-hammer', program: 'dumbbell', name: 'Hammer curl', pose: 'g-dbcurl', muscle: 'Biceps & onderarm', tip: 'Duimen naar boven, ellebogen tegen je zij.' },
+  { id: 'hd-db-press', program: 'dumbbell', name: 'Dumbbell press (op bank)', pose: 'g-dbbench', muscle: 'Borst & triceps', tip: 'Lig op de bank, voeten plat; dumbbells vanaf borsthoogte recht omhoog drukken.' },
+  { id: 'hd-tri-bench', program: 'dumbbell', name: 'Tricep extension met bankje', pose: 'g-skull', muscle: 'Triceps', tip: 'Lig op de bank, bovenarmen recht omhoog; alleen je onderarmen buigen richting je voorhoofd.' },
   // Kettlebell
   { id: 'hk-swing', program: 'kettlebell', name: 'Kettlebell swing', pose: 'g-kbswing', muscle: 'Bil & hamstrings', tip: 'Kracht uit je heupen (niet je armen): billen naar achteren en krachtig naar voren knijpen.' },
   { id: 'hk-goblet', program: 'kettlebell', name: 'Goblet squat (kettlebell)', pose: 'g-goblet-kb', muscle: 'Voorkant bovenbeen & bil', tip: 'Kettlebell bij de handvatten tegen je borst, borst omhoog.', alts: ['hk-deadlift'] },
@@ -508,18 +583,29 @@ const HOME_EXERCISES = [
 
 const HOME_TEMPLATES = {
   dumbbell: [
-    { id: 'hd-glutes', name: 'Billen & benen', note: 'Vooral bil', items: [
-      { exerciseId: 'hd-goblet', sets: 3, target: '12' }, { exerciseId: 'hd-rdl', sets: 3, target: '12' },
-      { exerciseId: 'hd-lunge', sets: 3, target: '10 per been' }, { exerciseId: 'hd-bridge', sets: 3, target: '15' },
-      { exerciseId: 'hd-sl-rdl', sets: 3, target: '10 per been' }, { exerciseId: 'hd-sumo', sets: 3, target: '12' } ] },
+    { id: 'hd-glutes', name: 'Billen & benen', note: 'Squats, lunges & hip thrusts', items: [
+      { exerciseId: 'hd-sumo', sets: 3, target: '12' }, { exerciseId: 'hd-goblet', sets: 3, target: '12' },
+      { exerciseId: 'hd-bulgarian', sets: 3, target: '10 per been' }, { exerciseId: 'hd-rdl', sets: 3, target: '12' },
+      { exerciseId: 'hd-hip-thrust', sets: 3, target: '12' }, { exerciseId: 'hd-sl-hip-thrust', sets: 2, target: '10 per been' },
+      { exerciseId: 'hd-step-up', sets: 2, target: '10 per been' } ] },
+    { id: 'hd-glutes2', name: 'Billen – bridges & lunges', note: 'Zonder bank', items: [
+      { exerciseId: 'hd-lunge', sets: 3, target: '10 per been' }, { exerciseId: 'hd-alt-bridge', sets: 3, target: '20 (om en om)' },
+      { exerciseId: 'hd-bridge-oh', sets: 3, target: '12' }, { exerciseId: 'hd-bridge', sets: 3, target: '15' },
+      { exerciseId: 'hd-sl-rdl', sets: 3, target: '10 per been' }, { exerciseId: 'hd-sumo', sets: 3, target: '15' } ] },
     { id: 'hd-full', name: 'Full body', note: 'Alles in één', items: [
       { exerciseId: 'hd-goblet', sets: 3, target: '12' }, { exerciseId: 'hd-row', sets: 3, target: '12' },
       { exerciseId: 'hd-press', sets: 3, target: '10' }, { exerciseId: 'hd-rdl', sets: 3, target: '12' },
-      { exerciseId: 'hd-floorpress', sets: 3, target: '12' }, { exerciseId: 'hd-lunge', sets: 2, target: '10 per been' } ] },
-    { id: 'hd-arms', name: 'Armen & schouders', note: 'Bovenlichaam', items: [
-      { exerciseId: 'hd-curl', sets: 3, target: '12' }, { exerciseId: 'hd-triceps', sets: 3, target: '12' },
+      { exerciseId: 'hd-db-press', sets: 3, target: '12' }, { exerciseId: 'hd-renegade', sets: 3, target: '8 per arm' },
+      { exerciseId: 'hd-lunge', sets: 2, target: '10 per been' } ] },
+    { id: 'hd-arms', name: 'Armen, rug & schouders', note: 'Bovenlichaam', items: [
+      { exerciseId: 'hd-curl', sets: 3, target: '12' }, { exerciseId: 'hd-hammer', sets: 3, target: '12' },
       { exerciseId: 'hd-press', sets: 3, target: '10' }, { exerciseId: 'hd-lateral', sets: 3, target: '15' },
-      { exerciseId: 'hd-row', sets: 3, target: '12' }, { exerciseId: 'hd-floorpress', sets: 3, target: '12' } ] },
+      { exerciseId: 'hd-triceps', sets: 3, target: '12' }, { exerciseId: 'hd-tri-bench', sets: 3, target: '12' },
+      { exerciseId: 'hd-row', sets: 3, target: '12' }, { exerciseId: 'hd-single-row', sets: 3, target: '10 per arm' },
+      { exerciseId: 'hd-pullover', sets: 3, target: '12' } ] },
+    { id: 'hd-core', name: 'Buik & core', note: 'Kort en pittig', items: [
+      { exerciseId: 'hd-crunch', sets: 3, target: '15' }, { exerciseId: 'hd-bicycle', sets: 3, target: '20 (om en om)' },
+      { exerciseId: 'hd-plank-drag', sets: 3, target: '10' }, { exerciseId: 'hd-march', sets: 3, target: '20 (om en om)' } ] },
   ],
   kettlebell: [
     { id: 'hk-glutes', name: 'Billen & benen', note: 'Vooral bil', items: [
@@ -562,6 +648,11 @@ const GYM_MUSCLES = {
   'bf-step-up': 'Bil & voorkant bovenbeen', 'bf-smith-lunge': 'Bil & voorkant bovenbeen', 'bf-frog-pump': 'Bil (gluteus maximus)',
   'bf-bb-glute-bridge': 'Bil (gluteus maximus)', 'bf-donkey-kick': 'Bil (gluteus maximus)', 'bf-sumo-squat-db': 'Bil & binnenkant bovenbeen',
   'bf-adduction': 'Binnenkant bovenbeen', 'bf-leg-extension': 'Voorkant bovenbeen (quadriceps)', 'bf-b-stance-rdl': 'Hamstrings & bil',
+  'bf-lp-sl-high-L': 'Bil (gluteus maximus) – linkerbeen', 'bf-lp-sl-high-R': 'Bil (gluteus maximus) – rechterbeen',
+  'bf-lp-high': 'Bil & hamstrings', 'bf-lp45-sl-L': 'Bil (gluteus maximus) – linkerbeen', 'bf-lp45-sl-R': 'Bil (gluteus maximus) – rechterbeen',
+  'bf-biceps-machine': 'Biceps', 'bf-triceps-machine': 'Triceps', 'bf-pec-deck': 'Borst', 'bf-incline-press': 'Borst (bovenkant)',
+  'bf-low-row': 'Rug (midden)', 'bf-close-pulldown': 'Rug (lats)', 'bf-hack-squat': 'Voorkant bovenbeen & bil',
+  'bf-calf-raise': 'Kuiten', 'bf-kneel-kickback': 'Bil (gluteus maximus)',
 };
 /** Extra wisselopties (⇄) zodat er altijd een alternatief is als een apparaat bezet is. */
 const GYM_EXTRA_ALTS = {
@@ -570,12 +661,16 @@ const GYM_EXTRA_ALTS = {
   'bf-frog-pump': ['bf-bb-glute-bridge', 'bf-hip-thrust'],
   'bf-bulgarian': ['bf-smith-lunge', 'bf-step-up'], 'bf-smith-lunge': ['bf-bulgarian', 'bf-walking-lunge', 'bf-step-up'],
   'bf-step-up': ['bf-lateral-stepup', 'bf-bulgarian'], 'bf-walking-lunge': ['bf-smith-lunge'],
-  'bf-glute-kickback-machine': ['bf-donkey-kick'], 'bf-cable-kickback': ['bf-donkey-kick'],
   'bf-donkey-kick': ['bf-cable-kickback', 'bf-glute-kickback-machine'],
   'bf-back-ext': ['bf-pull-through'], 'bf-pull-through': ['bf-back-ext', 'bf-bb-rdl'],
   'bf-bb-rdl': ['bf-b-stance-rdl', 'bf-pull-through'], 'bf-db-rdl': ['bf-b-stance-rdl'],
   'bf-b-stance-rdl': ['bf-sl-rdl', 'bf-db-rdl'],
-  'bf-leg-press': ['bf-sl-leg-press', 'bf-sl-leg-press-r', 'bf-smith-squat', 'bf-goblet-squat'],
+  'bf-leg-press': ['bf-lp-high', 'bf-sl-leg-press', 'bf-sl-leg-press-r', 'bf-lp-sl-high-L', 'bf-lp-sl-high-R',
+    'bf-lp45-sl-L', 'bf-lp45-sl-R', 'bf-hack-squat', 'bf-smith-squat', 'bf-goblet-squat'],
+  'bf-glute-kickback-machine': ['bf-donkey-kick', 'bf-kneel-kickback'], 'bf-cable-kickback': ['bf-donkey-kick', 'bf-kneel-kickback'],
+  'bf-hammer-curl': ['bf-biceps-machine'], 'bf-cable-curl': ['bf-biceps-machine'],
+  'bf-pushdown': ['bf-triceps-machine'], 'bf-oh-cable-ext': ['bf-triceps-machine'],
+  'bf-chest-press': ['bf-incline-press', 'bf-pec-deck'], 'bf-seated-row': ['bf-low-row'], 'bf-lat-pulldown': ['bf-close-pulldown'],
   'bf-smith-squat': ['bf-goblet-squat', 'bf-leg-press'], 'bf-goblet-squat': ['bf-smith-squat', 'bf-leg-press', 'bf-sumo-squat-db'],
   'bf-abduction': ['bf-band-walk'], 'bf-abduction-lean': ['bf-abduction', 'bf-clamshell'],
   'bf-lateral-stepup': ['bf-step-up'], 'bf-sumo-dl': ['bf-sumo-squat-db', 'bf-goblet-squat'],
@@ -604,8 +699,13 @@ const GYM_EXERCISES = [
   { id: 'bf-reverse-fly', name: 'Reverse fly machine', pose: 'g-revfly', tip: 'Borst tegen het kussen, armen wijd naar achteren.', alts: ['bf-face-pull'] },
   // Full body
   { id: 'bf-leg-press', name: 'Leg press', pose: 'g-legpress', tip: 'Onderrug blijft tegen het kussen; knieën niet op slot.', alts: ['bf-sl-leg-press'] },
-  { id: 'bf-sl-leg-press', name: 'Single-leg press – Linkerbeen', pose: 'g-sllegpress', side: 'L', tip: 'Alleen je LINKERvoet midden op het platform; rechtervoet rust op de grond. Licht gewicht, knie in lijn met je tenen.', alts: ['bf-sl-leg-press-r', 'bf-leg-press'] },
-  { id: 'bf-sl-leg-press-r', name: 'Single-leg press – Rechterbeen', pose: 'g-sllegpress', side: 'R', tip: 'Alleen je RECHTERvoet midden op het platform; linkervoet rust op de grond. Zelfde gewicht als links, zodat beide kanten gelijk sterk worden.', alts: ['bf-sl-leg-press', 'bf-leg-press'] },
+  { id: 'bf-sl-leg-press', name: 'Leg press – 1 been, voet middelhoog – Linkerbeen', pose: 'g-sllegpress', side: 'L', tip: 'Alleen je LINKERvoet midden op het platform; rechtervoet rust op de grond. Licht gewicht, knie in lijn met je tenen.', alts: ['bf-sl-leg-press-r', 'bf-leg-press'] },
+  { id: 'bf-sl-leg-press-r', name: 'Leg press – 1 been, voet middelhoog – Rechterbeen', pose: 'g-sllegpress', side: 'R', tip: 'Alleen je RECHTERvoet midden op het platform; linkervoet rust op de grond. Zelfde gewicht als links, zodat beide kanten gelijk sterk worden.', alts: ['bf-sl-leg-press', 'bf-leg-press'] },
+  { id: 'bf-lp-sl-high-L', name: 'Leg press – 1 been, voet hoog – Linkerbeen', pose: 'g-sllp-high', side: 'L', tip: 'LINKERvoet hoog op het platform (hiel bovenaan). Duw via je hiel; zo werkt vooral je bil.', alts: ['bf-lp-sl-high-R', 'bf-lp-high'] },
+  { id: 'bf-lp-sl-high-R', name: 'Leg press – 1 been, voet hoog – Rechterbeen', pose: 'g-sllp-high', side: 'R', tip: 'RECHTERvoet hoog op het platform (hiel bovenaan). Duw via je hiel; zo werkt vooral je bil.', alts: ['bf-lp-sl-high-L', 'bf-lp-high'] },
+  { id: 'bf-lp-high', name: 'Leg press – 2 voeten hoog', pose: 'g-lp-high', tip: 'Beide voeten hoog en heupbreed op het platform; duw via je hielen. Meer bil en hamstrings dan met voeten in het midden.', alts: ['bf-leg-press', 'bf-lp-sl-high-L'] },
+  { id: 'bf-lp45-sl-L', name: 'Schuin zittend 1 been voor de bilspier – Linkerbeen', pose: 'g-lp45-sl', side: 'L', tip: 'Schuine (45°) leg press. LINKERvoet hoog en iets naar buiten op het platform; zak diep en duw via je hiel.', alts: ['bf-lp45-sl-R', 'bf-lp-sl-high-L'] },
+  { id: 'bf-lp45-sl-R', name: 'Schuin zittend 1 been voor de bilspier – Rechterbeen', pose: 'g-lp45-sl', side: 'R', tip: 'Schuine (45°) leg press. RECHTERvoet hoog en iets naar buiten op het platform; zak diep en duw via je hiel.', alts: ['bf-lp45-sl-L', 'bf-lp-sl-high-R'] },
   { id: 'bf-lat-pulldown', name: 'Lat pulldown', pose: 'g-pulldown', tip: 'Trek de stang naar je bovenborst, borst omhoog.', alts: ['bf-assisted-pullup'] },
   { id: 'bf-assisted-pullup', name: 'Assisted pull-up machine', pose: 'g-pulldown', tip: 'Meer gewicht = meer hulp.', alts: ['bf-lat-pulldown'] },
   { id: 'bf-chest-press', name: 'Chest press machine', pose: 'g-chestpress', tip: 'Handgrepen op borsthoogte, schouderbladen naar achteren.', alts: ['bf-cable-chest-press'] },
@@ -655,6 +755,16 @@ const GYM_EXERCISES = [
   { id: 'bf-adduction', name: 'Hip adduction machine (binnenkant)', pose: 'g-adduction', tip: 'Knieën rustig naar elkaar toe knijpen, langzaam terug.' },
   { id: 'bf-leg-extension', name: 'Leg extension (voorkant bovenbeen)', pose: 'g-legext', tip: 'Strek tot bijna gestrekt, 1 tel vasthouden, langzaam terug.' },
   { id: 'bf-b-stance-rdl', name: 'B-stance RDL (dumbbells)', pose: 'g-rdl-db', tip: 'Achterste voet alleen op de tenen als steun; het voorste been doet ± 80% van het werk.' },
+  // v7 — apparaten voor armen, borst/rug en benen + extra bil
+  { id: 'bf-biceps-machine', name: 'Biceps curl machine', pose: 'g-machinecurl', tip: 'Bovenarmen plat op het kussen, ellebogen in lijn met het draaipunt; langzaam laten zakken.' },
+  { id: 'bf-triceps-machine', name: 'Triceps extension machine', pose: 'g-machinetri', tip: 'Ellebogen op het kussen, strek je armen volledig; schouders laag.' },
+  { id: 'bf-pec-deck', name: 'Pec deck (butterfly)', pose: 'g-pecdeck', tip: 'Rug tegen het kussen, armen licht gebogen; knijp je borst samen in het midden.' },
+  { id: 'bf-incline-press', name: 'Incline chest press machine', pose: 'g-chestpress', tip: 'Handgrepen op bovenborst-hoogte; druk schuin omhoog, schouderbladen naar achteren.' },
+  { id: 'bf-low-row', name: 'Low row machine', pose: 'g-seatedrow', tip: 'Borst tegen het kussen, trek de handgrepen naar je buik en knijp je schouderbladen samen.' },
+  { id: 'bf-close-pulldown', name: 'Lat pulldown – smalle greep', pose: 'g-pulldown', tip: 'V-greep of smalle stang; trek naar je borstbeen, ellebogen langs je lichaam.' },
+  { id: 'bf-hack-squat', name: 'Hack squat machine', pose: 'g-smithsquat', tip: 'Rug en schouders tegen de kussens; voeten hoger op het platform = meer bil.' },
+  { id: 'bf-calf-raise', name: 'Calf raise machine', pose: 'g-calf', tip: 'Voorvoeten op de rand, hielen rustig laten zakken en zo hoog mogelijk op je tenen komen.' },
+  { id: 'bf-kneel-kickback', name: 'Kneeling cable kickback', pose: 'g-kneelkick', tip: 'Op handen en knieën met enkelband aan de lage kabel; been naar achteren-boven strekken, bil aanspannen.' },
 ].map((e) => ({
   ...e, program: 'gym', kind: 'weights', muscle: GYM_MUSCLES[e.id], uni: UNI[e.id],
   alts: [...new Set([...(e.alts || []), ...(GYM_EXTRA_ALTS[e.id] || [])])].filter((a) => a !== e.id),
