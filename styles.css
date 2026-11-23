@@ -618,6 +618,9 @@ body.player-open { overflow: hidden; }
 .fb-alt .btn { flex: 0 1 auto; }
 .feedback .chips { margin-top: 4px; }
 
+.version-card { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.version-card p { flex: 1; }
+
 /* ---------- Toast ---------- */
 #toast {
   position: fixed; left: 50%; top: calc(env(safe-area-inset-top) + 14px); z-index: 50;

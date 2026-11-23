@@ -126,7 +126,7 @@ nooit het gewicht van de andere kant tonen. `+ Set` voegt een L+R-paar toe. In d
 | `data.js` | **Vaste inhoud (catalogus), geen gebruikersdata**: `POSES`, `PILATES_EXERCISES`, `PILATES_LEVELS`, `GYM_EXERCISES`, `GYM_TEMPLATES`, `RUN_PLAN`, `HR_ZONES`, `CATALOG`. Inhoud aanpassen = hier. |
 | `app.js` | Alle logica: opslag/migratie, rendering per view, events, rusttimer, run-timer, herinneringen, backup. |
 | `styles.css` | Styling + tokens. |
-| `sw.js` | Service worker (stale-while-revalidate) + `notificationclick`. **Verhoog de versie in `CACHE` (`workout-tracker-vN`) bij elke release** en zet nieuwe bestanden in `ASSETS`. Ruimt alleen caches met prefix `workout-tracker-` op (gedeeld github.io-domein!). |
+| `sw.js` | Service worker **network-first** (`cache: 'no-cache'` → ETag/304; na 4 s of offline → cache) + `notificationclick`. Install haalt bestanden op met `cache: 'reload'`. **Verhoog bij elke release `CACHE` (`workout-tracker-vN`) én `APP_VERSION` in app.js (zelfde N)** en zet nieuwe bestanden in `ASSETS`. Ruimt alleen caches met prefix `workout-tracker-` op (gedeeld github.io-domein!). |
 | `.nojekyll` | Leeg bestand: GitHub Pages serveert alles letterlijk (geen Jekyll-verwerking). |
 | `manifest.webmanifest`, `icons/` | PWA. Iconen via `python tools/make_icons.py` (kleur bovenin script). |
 | `images/` | Optionele eigen oefening-plaatjes (zie `images/README.md` + `LOCAL_IMAGES` in data.js). |
@@ -252,8 +252,17 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
   (`credential.helper=manager`). De chat-shell blokkeert inlogvensters (`GIT_TERMINAL_PROMPT=0`,
   `GCM_INTERACTIVE=never`); verloopt de login, laat de gebruiker in een gewoon PowerShell-venster
   `…\git\ucrt64\bin\git-credential-manager.exe github login` draaien. Alternatief: *Push origin* in GitHub Desktop.
-- **Release-checklist**: (1) wijzig code, (2) verhoog `CACHE`-versie in `sw.js`, (3) upload gewijzigde
-  bestanden, (4) op de telefoon: app openen, sluiten, opnieuw openen (stale-while-revalidate → 2e start is nieuw).
+- **Release-checklist**: (1) wijzig code, (2) verhoog `CACHE` in `sw.js` en `APP_VERSION` in app.js,
+  (3) commit + push, (4) wacht tot `sw.js` live de nieuwe versie toont (GitHub Pages ± 1 min).
+- **Waarom updates soms niet zichtbaar waren (opgelost in v11)**: GitHub Pages stuurt
+  `Cache-Control: max-age=600` en de oude SW was stale-while-revalidate → eerst oude versie, soms
+  meerdere keren openen nodig. Nu: network-first, `register(…, { updateViaCache: 'none' })`, update-check
+  bij terugkeren in de app (`visibilitychange`), en bij `controllerchange` één automatische herlaad
+  (`reloadForUpdate`, niet tijdens een training/open dialoog → uitgesteld tot het startscherm).
+  Versie + knop "🔄 Controleer op updates" staan op de geschiedenispagina. Getest: v11 → v12 → v13
+  automatisch opgepakt, offline opent de app uit de cache.
+- **Telefoon met een héél oude versie (≤ v10)**: die draait nog de oude SW. Eén keer de app openen
+  (nieuwe SW installeert), app volledig afsluiten (wegvegen) en opnieuw openen → vanaf dan automatisch.
 - `localStorage` en Cache Storage zijn per origin (`<gebruiker>.github.io`), dus gedeeld met andere
   Pages-sites van dezelfde gebruiker: houd keys/caches geprefixt (`workout-tracker…`).
 - Data van de LAN-test (`http://<pc-ip>:8000`) staat op een andere origin → overzetten via backup export/import.
@@ -269,6 +278,9 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v11 (2026-11-23)**: updates komen nu direct door: service worker network-first (met offline-
+  fallback), automatische herlaad bij een nieuwe versie, update-check bij terugkeren in de app,
+  versie + "Controleer op updates" op de geschiedenispagina.
 - **v10 (2026-11-23)**: feedback/vragen vanuit de app via het deelmenu (WhatsApp/iMessage/mail), met
   soort, onderwerp, bericht en foto; ingangen op startscherm, Basic-Fit en oefening-uitleg; `APP_VERSION`. Cache v10.
 - **v9 (2026-11-23)**: Basic-Fit compleet gemaakt: +45 oefeningen / +18 toestellen — machines (torso

@@ -6,7 +6,7 @@
    ========================================================= */
 
 /* ---------- Constants ---------- */
-const APP_VERSION = 'v10';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
+const APP_VERSION = 'v11';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
 const STORAGE_KEY = 'workout-tracker:v1';          // legacy (vóór profielen) + prefix
 const TIMER_KEY = 'workout-tracker:timer';
 const PERSON_KEY = 'workout-tracker:person';       // laatst gekozen persoon
@@ -597,6 +597,10 @@ function renderLog() {
       <p class="muted small">Wist alleen de gegevens van ${esc(personById(personId).name)} (trainingen, gewichten, notities,
       eigen schema's). Het andere profiel blijft ongemoeid. Je krijgt eerst de kans een backup te downloaden.</p>
       <button class="btn ghost danger block" data-action="reset-person">Reset ${esc(personById(personId).name)}</button>
+    </section>
+    <section class="card version-card">
+      <p><strong>App-versie ${APP_VERSION}</strong><br><span class="muted small">Updates worden automatisch geladen als je online bent.</span></p>
+      <button class="btn small" data-action="check-update">🔄 Controleer op updates</button>
     </section>`;
 }
 
@@ -2496,6 +2500,8 @@ async function handleAction(action, btn) {
     }
     case 'close-sheet': closeSheet(); break;
 
+    case 'check-update': checkForUpdate({ manual: true }); break;
+
     /* Feedback */
     case 'feedback': openFeedback({ type: btn.dataset.type, subject: btn.dataset.subject || '' }); break;
     case 'fb-type': feedback.type = btn.dataset.type; renderFeedbackSheet(); break;
@@ -2592,6 +2598,44 @@ document.addEventListener('keydown', (e) => {
   }
 })();
 
+/* ---------- Updates ----------
+   - sw.js zonder HTTP-cache controleren (updateViaCache: 'none');
+   - bij terugkeren naar de app (iPhone-apps op het beginscherm herstarten vaak niet) opnieuw controleren;
+   - neemt een nieuwe service worker het over, dan laden we één keer opnieuw — maar niet midden in een
+     training (dan krijgt de gebruiker de nieuwe versie bij de volgende keer openen). */
+let swReg = null;
+let reloadPending = false;
+const hadController = 'serviceWorker' in navigator && !!navigator.serviceWorker.controller;
+
+function reloadForUpdate() {
+  if (db.active || sheet.open || confirmEl.open) { reloadPending = true; return; }
+  location.reload();
+}
+
+async function checkForUpdate({ manual = false } = {}) {
+  if (!swReg) { if (manual) toast('Updates controleren kan alleen in de geïnstalleerde/online app'); return; }
+  try {
+    await swReg.update();
+    if (manual && !swReg.installing && !swReg.waiting) toast(`Je hebt de nieuwste versie (${APP_VERSION}) ✓`);
+  } catch (_) {
+    if (manual) toast('Geen internet — probeer het later nog eens');
+  }
+}
+
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW', err)));
+  window.addEventListener('load', async () => {
+    try {
+      swReg = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
+    } catch (err) { console.warn('SW', err); }
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return; // eerste installatie: niets te verversen
+    toast('Nieuwe versie geladen ✨');
+    setTimeout(reloadForUpdate, 900);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') checkForUpdate();
+  });
+  // Uitgestelde herlaad (na een training) zodra het kan
+  setInterval(() => { if (reloadPending && !db.active && !sheet.open && !confirmEl.open && view === 'home') location.reload(); }, 2000);
 }
