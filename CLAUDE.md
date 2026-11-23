@@ -146,8 +146,11 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
   `openWindow('./')`), `register('sw.js')`. Geverifieerd 2026-11-23: SW-scope = `/<repo>/`, alles 200,
   volledig offline bruikbaar.
 - Publiceren: repo (public, verplicht voor gratis Pages) → Settings → Pages → *Deploy from a branch*,
-  branch `main`, map `/ (root)`. Er is (nog) geen git op de pc → bestanden via de GitHub-website
-  uploaden (*Add file → Upload files*).
+  branch `main`, map `/ (root)`.
+- **Git op deze pc**: alleen via GitHub Desktop (niet in PATH). Gebundelde git:
+  `$env:LOCALAPPDATA\GitHubDesktop\app-<versie>\resources\app\git\cmd\git.exe`. Pushen/publiceren
+  gaat via GitHub Desktop (die regelt de login). Repo-identiteit staat lokaal op het GitHub
+  **no-reply**-adres; commit nooit met het privé-mailadres (repo is publiek).
 - **Release-checklist**: (1) wijzig code, (2) verhoog `CACHE`-versie in `sw.js`, (3) upload gewijzigde
   bestanden, (4) op de telefoon: app openen, sluiten, opnieuw openen (stale-while-revalidate → 2e start is nieuw).
 - `localStorage` en Cache Storage zijn per origin (`<gebruiker>.github.io`), dus gedeeld met andere
