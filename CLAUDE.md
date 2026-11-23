@@ -9,8 +9,11 @@ in de browser, geen backend, geen build-stap. UI-taal: **Nederlands**. Thema: **
 
 ## Productoverzicht
 **Beginpagina = profielkeuze** (`view: 'who'`): "Mama" 🌷 of "Senna" 🌸 (`PEOPLE` in app.js). Alle
-voortgang (history, gewichten, eigen schema's, actieve sessie, instellingen, hartslagprofiel) staat
-**per persoon apart**. Wisselen via de chip "⇄ wisselen" onder de begroeting. Bij een cold start
+voortgang (history, gewichten, **notities per oefening** (`db.notes`), eigen schema's, actieve sessie,
+instellingen, hartslagprofiel) staat **per persoon apart**. Wisselen via de chip "⇄ wisselen" onder de
+begroeting én via de profielknop rechtsboven op elke pagina (`personButton()` in `backHeader`).
+Per profiel: backup export/import en **"Reset <naam>"** (geschiedenis-pagina; optioneel eerst backup,
+veiligheidskopie in `…:<id>:before-reset`). Bij een cold start
 verschijnt altijd de profielkeuze, behalve als de laatst gekozen persoon nog een lopende training
 heeft (dan direct daarheen, zodat een timer niet "verdwijnt").
 
@@ -21,14 +24,22 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
 1. **Hardloopschema** (`view: 'run'`): 10 weken × 3 trainingen (start-to-run naar 5 km).
    Afvinkkalender (week × training), "volgende training", begeleide intervaltimer met
    geluid/spraak/trilling, 3×/week-herinnering (banner, browsermelding, agenda-.ics).
-2. **Thuis trainen – Pilatesbord** (`view: 'pilates'`): niveaus Licht/Medium/Zwaar. Afgestemd op
+2. **Thuis trainen** (`view: 'thuis'`) = keuzescherm met 4 opties (`THUIS_OPTIONS`):
+   **Pilates met bord** (`pilates`), **Pilates op matje** (`mat`) — beide volledig-scherm speler via
+   `PLAYER_PROGRAMS` (levels + exercises) — en **Thuis met dumbbell** / **Thuis met kettlebell**
+   (`dumbbell` / `kettlebell`: vaste schema's `HOME_TEMPLATES`, set-tracker met kg + rusttimer,
+   sessie-`program` = `dumbbell`/`kettlebell`).
+   **Pilates met bord**: niveaus Licht/Medium/Zwaar. Afgestemd op
    haar **Action-pilatesbord**: langwerpig bord met **glijplaat/slede in het midden**, **handgrepen** aan
    de uiteinden en **koorden met handvatten**. Oefeningen: koord-oefeningen staand/zittend,
    slede-oefeningen (glij-lunge, knee tuck, pike, rollout, hamstring-glij, kickback) + matwerk.
-   **Een niveau kiezen opent de volledig-scherm speler** (`renderPlayer`): klaarmaken (10 s) →
-   per set een werk-interval → rust (`level.rest`) → … schakelt **automatisch** door, met spraak,
-   piepjes, pauze/hervat en ⏮/⏭ als back-up. Werktijd voor herhalingsoefeningen instelbaar
-   (30/40/50/60 s, `settings.pilatesWork`); tijd-oefeningen gebruiken hun eigen `sec`.
+   **Een niveau kiezen opent de volledig-scherm speler** (`renderPlayer`, tijdlijn `buildPlayerSegs`):
+   `prep` (10 s) → per oefening: `work` (set) / `rest` (`level.rest`) tussen sets / `side` (5 s)
+   tussen links en rechts → `switch` (**wisseltijd tussen oefeningen**, `settings.pilatesSwitch`
+   10/15/20/30 s, groen scherm "Wissel van houding" + volgende oefening). Laatste 3 s van elk segment:
+   visueel aftellen (`.countdown`, roze pulserende klok) + `tick()`-piepjes; segmentwissel = `alarm()` +
+   spraak. Pauze/hervat, ⏮/⏭, ✕ stoppen. Werktijd herhalingsoefeningen 30/40/50/60 s
+   (`settings.pilatesWork`); tijd-oefeningen gebruiken hun eigen `sec`.
    Probeert de Fullscreen API (Android); op iPhone vult de speler het scherm (`position: fixed`).
 3. **Basic-Fit** (`view: 'gym'`): Armen (zonder bankje, ⇄ alternatieven), Full Body, Bil 1/2/3
    (elk 7 oefeningen), kg + reps per set, sets bewerkbaar. **Bil-schema's per bilspier** met
@@ -39,9 +50,17 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
    **Spiergroep**: elke oefening heeft `muscle` (`GYM_MUSCLES` / `PILATES_MUSCLES` in data.js), getoond
    als groen label in de oefeningkaart, keuzelijsten, editor, info en speler. Het ⇄-wisselscherm toont
    "Nu: … 💪 spiergroep" en per alternatief de spiergroep + "✓ zelfde spiergroep" / "↺ andere focus".
-   Nieuwe oefeningen (v5): `bf-sl-kb-rdl` (single-leg kettlebell RDL, één hand), `bf-sl-leg-press`
-   (leg press met linkerbeen), `bf-seated-leg-curl` (zittend beenbuig-apparaat, hamstrings). Bereikbaar
-   via ⇄ (alt van single-leg RDL / leg press / leg curl) en via eigen schema's.
+   Oefeningen: `bf-sl-kb-rdl` (single-leg kettlebell RDL, één hand, L/R), `bf-sl-leg-press`
+   (**Linkerbeen**) en `bf-sl-leg-press-r` (**Rechterbeen**) met `side: 'L'|'R'`-badge,
+   `bf-seated-leg-curl` (hamstrings, beenbuig-apparaat). v6 voegde ±13 extra (vooral bil-)oefeningen
+   toe; `GYM_EXTRA_ALTS` koppelt ze als ⇄-alternatief aan de schema-oefeningen (apparaat bezet → wisselen).
+   Catalogus v6: 117 oefeningen (gym 66, waarvan 37 bil; pilatesbord 18; mat 13; dumbbell 12; kettlebell 8).
+
+**Eenzijdige oefeningen** (`UNI` in data.js → `exercise.uni = 'been'|'arm'|'kant'`): in de set-tracker
+krijgt elke set een L- én R-rij (`set.side`), gelabeld "Linkerbeen"/"Rechterbeen" (blauw/oranje), met
+uitleg "eerst links, dan rechts". "Vorige keer"/placeholders zijn **strikt per kant** (`prevSetFor`):
+nooit het gewicht van de andere kant tonen. `+ Set` voegt een L+R-paar toe. In de speler: work L →
+`side`-wissel → work R, met grote kant-badge.
 4. **Hartslag** (`view: 'heart'`): uitleg (geen live smartwatch-data in een PWA), profiel, zones, HR per sessie.
 
 ## Illustraties (100% offline, nooit leeg)
@@ -76,7 +95,7 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
 
 ## Architectuur `app.js`
 - Globaal `db` (gebruikersdata) + UI-state (`view`, `editing`, `historyLimit`, `timer`).
-- `render()` kiest view: `who | home | run | pilates | gym | heart | log | workout`. Bij `workout`
+- `render()` kiest view: `who | home | run | thuis | pilates | mat | dumbbell | kettlebell | gym | heart | log | workout`. Bij `workout`
   met `db.active.run`: hardlopen → `renderRunSession()`, pilates → `renderPlayer()`; anders set-tracker.
 - Profielen: globale `personId` + `db` (= data van die persoon). `selectPerson(pid)` laadt via
   `load(pid)`; `saveNow()` schrijft naar `dataKey(personId)` en doet niets zolang er niemand gekozen is. Terugknop via
@@ -148,7 +167,10 @@ Backup-export = data van de huidige persoon (`workout-backup-<persoon>-<datum>.j
                     // "run": {segs,i,endAt,segStart,paused,pausedLeft}. Hardlopen: segs {type:'warmup'|'run'|'walk'|'cooldown', sec}.
                     // Pilates-speler: segs {type:'prep'|'work'|'rest', e (oefening-index), s (set-index), sec};
                     // een voorbij (of overgeslagen ⏭) work-segment zet die set op done (completeSeg).
-  "settings": { "restSeconds": 90, "pilatesWork": 40 },
+  "settings": { "restSeconds": 90, "pilatesWork": 40, "pilatesSwitch": 15 },
+  "notes": { "bf-bulgarian": "Bank op stand 3" },   // vaste notitie per oefening-id (per profiel)
+  // sets kunnen een "side": "L" | "R" hebben (eenzijdige oefeningen); entries een "uni": "been"|"arm"|"kant"
+  // sessie-program: "gym" | "pilates" (bord én matje) | "run" | "dumbbell" | "kettlebell"
   "run": { "reminder": { "days": [0, 2, 5], "time": "19:00", "notify": false, "lastNotified": "YYYY-MM-DD" | null } }, // days: 0 = maandag
   "profile": { "age": null, "restHr": null, "maxHr": null },
   "lastBackupAt": null
@@ -209,6 +231,11 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v6 (2026-11-23)**: Thuis trainen in 4 keuzes (pilates met bord, **pilates op matje** (13 oef., 3
+  niveaus), **dumbbell** (12 oef., 3 schema's), **kettlebell** (8 oef., 2 schema's)); speler met
+  wisseltijd tussen oefeningen, kant-wissel en 3-2-1-aftellen met piepjes; L/R-rijen voor eenzijdige
+  oefeningen (strikt per kant); single-leg press Links én Rechts; ±13 extra Basic-Fit-oefeningen (vooral
+  bil) als ⇄-alternatief; notities per oefening; profielknop op elke pagina; reset per profiel. Cache v6.
 - **v5 (2026-11-23)**: profielkeuze Mama/Senna als beginpagina met gescheiden opslag per persoon
   (+ eenmalige toewijzing van oude gegevens); pilates als volledig-scherm speler die automatisch
   doorschakelt (pauze, ⏮/⏭, instelbare tijd per set); Basic-Fit "Mijn eigen schema's" + verbeterde

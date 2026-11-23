@@ -26,7 +26,13 @@ const PROGRAMS = {
   run: { emoji: '🏃‍♀️', label: 'Hardlopen' },
   pilates: { emoji: '🧘‍♀️', label: 'Thuis trainen' },
   gym: { emoji: '🏋️‍♀️', label: 'Basic-Fit' },
+  dumbbell: { emoji: '💪', label: 'Thuis met dumbbell' },
+  kettlebell: { emoji: '🔔', label: 'Thuis met kettlebell' },
 };
+const SESSION_PROGRAMS = Object.keys(PROGRAMS);
+const SIDE_WORD = { L: 'Links', R: 'Rechts' };
+/** "Linkerbeen", "Rechterarm", "Linkerkant" … */
+const sideLabel = (side, limb = 'kant') => `${side === 'L' ? 'Linker' : 'Rechter'}${limb}`;
 const SEG_LABEL = { warmup: 'Warming-up · wandelen', run: 'Hardlopen', walk: 'Wandelen', cooldown: 'Cooling-down · wandelen' };
 const V1_DEFAULT_IDS = ['ex-bench-press', 'ex-shoulder-press', 'ex-lat-pulldown', 'ex-seated-row', 'ex-biceps-curl',
   'ex-triceps-pushdown', 'ex-lateral-raise', 'ex-squat', 'ex-romanian-deadlift', 'ex-hip-thrust', 'ex-leg-press',
@@ -57,9 +63,10 @@ function parseNum(v) {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 function fmtSet(s, kind) {
-  if (kind === 'time' || (s.sec != null && s.reps == null)) return `${s.sec ?? '–'} sec`;
-  if (s.kg == null) return `${s.reps ?? '–'} reps`;
-  return `${fmtNum(s.kg)} kg × ${s.reps ?? '–'}`;
+  const side = s.side ? `${s.side} ` : '';
+  if (kind === 'time' || (s.sec != null && s.reps == null)) return `${side}${s.sec ?? '–'} sec`;
+  if (s.kg == null) return `${side}${s.reps ?? '–'} reps`;
+  return `${side}${fmtNum(s.kg)} kg × ${s.reps ?? '–'}`;
 }
 function fmtSetShort(s, kind) {
   if (kind === 'time') return `${s.sec ?? '–'}s`;
@@ -104,6 +111,7 @@ function defaultDb() {
     settings: { restSeconds: 90 },
     run: { reminder: { days: [0, 2, 5], time: '19:00', notify: false, lastNotified: null } },
     profile: { age: null, restHr: null, maxHr: null },
+    notes: {},           // vaste notitie per oefening-id (bv. "stoel op stand 4")
     lastBackupAt: null,
   };
 }
@@ -112,7 +120,7 @@ function normSession(s, fallbackProgram = 'gym') {
   const hr = s.hr && (numOrNull(s.hr.avg) || numOrNull(s.hr.max)) ? { avg: numOrNull(s.hr.avg), max: numOrNull(s.hr.max) } : null;
   const out = {
     id: String(s.id || uid()),
-    program: ['gym', 'pilates', 'run'].includes(s.program) ? s.program : fallbackProgram,
+    program: SESSION_PROGRAMS.includes(s.program) ? s.program : fallbackProgram,
     templateId: s.templateId ?? null,
     name: String(s.name || 'Workout'),
     startedAt: s.startedAt || new Date().toISOString(),
@@ -126,8 +134,10 @@ function normSession(s, fallbackProgram = 'gym') {
       target: String(e.target ?? ''),
       targetSec: numOrNull(e.targetSec),
       alts: Array.isArray(e.alts) ? e.alts.map(String) : null,
+      uni: ['been', 'arm', 'kant'].includes(e.uni) ? e.uni : null,
       sets: (Array.isArray(e.sets) ? e.sets : []).map((x) => ({
         kg: numOrNull(x.kg), reps: numOrNull(x.reps), sec: numOrNull(x.sec), done: !!x.done,
+        ...(x.side === 'L' || x.side === 'R' ? { side: x.side } : {}),
       })),
     })),
   };
@@ -168,7 +178,7 @@ function normalizeDb(raw) {
   exercises = exercises.map((e) => ({
     id: String(e.id), name: String(e.name),
     kind: ['weights', 'reps', 'time'].includes(e.kind) ? e.kind : 'weights',
-    program: e.program === 'pilates' ? 'pilates' : 'gym',
+    program: ['pilates', 'mat', 'gym', 'dumbbell', 'kettlebell'].includes(e.program) ? e.program : 'gym',
   }));
   templates = templates.map((t) => ({
     id: String(t.id), name: String(t.name), program: 'gym', note: t.note ? String(t.note) : '',
@@ -196,6 +206,9 @@ function normalizeDb(raw) {
       lastNotified: rem.lastNotified || null,
     } },
     profile: { ...base.profile, ...(raw.profile || {}) },
+    notes: raw.notes && typeof raw.notes === 'object'
+      ? Object.fromEntries(Object.entries(raw.notes).filter(([, v]) => typeof v === 'string' && v.trim()).map(([k, v]) => [k, v.slice(0, 300)]))
+      : {},
     lastBackupAt: raw.lastBackupAt || null,
   };
   for (const s of [...db.history, ...(db.active ? [db.active] : [])]) {
@@ -309,9 +322,24 @@ function findPrevious(exerciseId) {
   return null;
 }
 
+/** Vorige prestatie voor rij i — bij eenzijdige oefeningen de zelfde kant (n-de linker/rechter set). */
+function prevSetFor(entry, i, prev) {
+  if (!prev) return null;
+  const side = entry.sets[i]?.side;
+  if (side && prev.sets.some((s) => s.side)) {
+    // strikt per kant: nooit het gewicht van links tonen bij rechts (of andersom)
+    const nth = entry.sets.slice(0, i).filter((s) => s.side === side).length;
+    const same = prev.sets.filter((s) => s.side === side);
+    return same.length ? (same[nth] ?? same[same.length - 1]) : null;
+  }
+  return prev.sets[i] ?? prev.sets[prev.sets.length - 1] ?? null;
+}
+
 function placeholderFor(entry, i, prev = findPrevious(entry.exerciseId)) {
-  const p = prev?.sets[i] ?? prev?.sets[prev.sets.length - 1];
-  const above = entry.sets[i - 1];
+  const p = prevSetFor(entry, i, prev);
+  const side = entry.sets[i]?.side;
+  // vorige rij van dezelfde kant (bij L/R-paren is dat 2 rijen terug)
+  const above = side ? entry.sets.slice(0, i).reverse().find((s) => s.side === side) : entry.sets[i - 1];
   return {
     kg: above?.kg ?? p?.kg ?? null,
     reps: above?.reps ?? p?.reps ?? firstNum(entry.target),
@@ -319,10 +347,15 @@ function placeholderFor(entry, i, prev = findPrevious(entry.exerciseId)) {
   };
 }
 
+const emptySet = (side) => ({ kg: null, reps: null, sec: null, done: false, ...(side ? { side } : {}) });
+
 function newEntry(exerciseId, item = {}) {
   const ex = exById(exerciseId);
   const prev = findPrevious(exerciseId);
-  const n = item.sets ?? prev?.sets.length ?? DEFAULT_SETS;
+  const uni = ex?.uni || null;
+  // aantal sets per kant; bij eenzijdig worden het L/R-paren
+  const prevCount = prev ? (uni ? Math.ceil(prev.sets.length / 2) : prev.sets.length) : null;
+  const n = item.sets ?? prevCount ?? DEFAULT_SETS;
   return {
     id: uid(),
     exerciseId,
@@ -331,7 +364,10 @@ function newEntry(exerciseId, item = {}) {
     target: item.target ?? '',
     targetSec: item.sec ?? null,
     alts: ex?.alts?.length ? [exerciseId, ...ex.alts] : null,
-    sets: Array.from({ length: n }, () => ({ kg: null, reps: null, sec: null, done: false })),
+    uni,
+    sets: uni
+      ? Array.from({ length: n }, () => [emptySet('L'), emptySet('R')]).flat()
+      : Array.from({ length: n }, () => emptySet()),
   };
 }
 
@@ -415,7 +451,10 @@ function render() {
   if (view === 'workout' && !db.active) view = 'home';
   const timed = view === 'workout' && !!db.active?.run;          // run-sessie of pilates-speler
   const isPlayer = timed && db.active.program === 'pilates';
-  const renderers = { who: renderWho, home: renderHome, run: renderRun, pilates: renderPilates, gym: renderGym, heart: renderHeart, log: renderLog };
+  const renderers = {
+    who: renderWho, home: renderHome, run: renderRun, thuis: renderThuis, pilates: renderPilates, mat: renderPilates,
+    dumbbell: renderHomeWeights, kettlebell: renderHomeWeights, gym: renderGym, heart: renderHeart, log: renderLog,
+  };
   app.innerHTML = view === 'workout'
     ? (timed ? (isPlayer ? renderPlayer() : renderRunSession()) : renderWorkout())
     : renderers[view]();
@@ -439,10 +478,18 @@ function go(v) {
   window.scrollTo(0, 0);
 }
 
+/** Profielknop rechtsboven op elke pagina: snel wisselen tussen Mama en Senna. */
+const personButton = () => {
+  const p = personById(personId);
+  return p ? `<button class="person-mini" data-action="go" data-view="who" aria-label="Profiel: ${esc(p.name)} — wisselen">
+    <span>${p.emoji}</span><span class="person-mini-name">${esc(p.name)}</span></button>` : '';
+};
+
 const backHeader = (title, sub = '', back = 'home') => `
   <header class="page-top">
     <button class="icon-btn back" data-action="go" data-view="${back}" aria-label="Terug">‹</button>
     <div class="grow"><h1>${title}</h1>${sub ? `<p class="sub">${sub}</p>` : ''}</div>
+    ${personButton()}
   </header>`;
 
 function greeting() {
@@ -493,7 +540,7 @@ function renderHome() {
   const done = runDoneMap();
   const doneCount = Object.keys(done).length;
   const next = nextRunKey(done);
-  const lastPilates = db.history.find((s) => s.program === 'pilates');
+  const lastHome = db.history.find((s) => ['pilates', 'dumbbell', 'kettlebell'].includes(s.program));
   const lastGym = db.history.find((s) => s.program === 'gym');
   const backupDue = !db.lastBackupAt ? db.history.length > 0 : daysAgo(db.lastBackupAt) >= BACKUP_WARN_DAYS && db.history.length > 0;
   return `
@@ -518,7 +565,7 @@ function renderHome() {
 
     <div class="programs">
       ${programCard('run', 'Hardloopschema', next ? `${doneCount}/30 · volgende: ${runTitle(next)}` : 'Schema afgerond! 🎉', doneCount / 30)}
-      ${programCard('pilates', 'Thuis trainen', lastPilates ? `Pilatesbord · laatst ${relDays(lastPilates.startedAt)}` : 'Pilatesbord · Licht, Medium of Zwaar')}
+      ${programCard('thuis', 'Thuis trainen', lastHome ? `Laatst: ${esc(lastHome.name)} · ${relDays(lastHome.startedAt)}` : 'Pilates (bord/matje) · dumbbell · kettlebell')}
       ${programCard('gym', 'Basic-Fit', lastGym ? `Laatst: ${esc(lastGym.name)} · ${relDays(lastGym.startedAt)}` : 'Armen · Full Body · Bil 1–3')}
     </div>`;
 }
@@ -528,19 +575,25 @@ function renderLog() {
     ${backHeader('Geschiedenis', `${plural(db.history.length, 'training', 'trainingen')} opgeslagen`)}
     ${renderHistory()}
     <section class="card backup">
-      <h2>Backup</h2>
+      <h2>Backup van ${esc(personById(personId).name)}</h2>
       ${backupNotice()}
       <div class="row">
         <button class="btn" data-action="export">⬇︎ Exporteer backup (JSON)</button>
         <button class="btn" data-action="import">⬆︎ Importeer backup</button>
       </div>
+    </section>
+    <section class="card reset-card">
+      <h2>Profiel opnieuw beginnen</h2>
+      <p class="muted small">Wist alleen de gegevens van ${esc(personById(personId).name)} (trainingen, gewichten, notities,
+      eigen schema's). Het andere profiel blijft ongemoeid. Je krijgt eerst de kans een backup te downloaden.</p>
+      <button class="btn ghost danger block" data-action="reset-person">Reset ${esc(personById(personId).name)}</button>
     </section>`;
 }
 
 function programCard(program, title, sub, progress = null) {
   return `
     <button class="program-card p-${program}" data-action="go" data-view="${program}">
-      <span class="pc-emoji">${PROGRAMS[program].emoji}</span>
+      <span class="pc-emoji">${(PROGRAMS[program] || { emoji: '🏡' }).emoji}</span>
       <span class="pc-text">
         <span class="pc-title">${title}</span>
         <span class="pc-sub">${sub}</span>
@@ -723,38 +776,91 @@ function renderRunSession() {
 }
 
 /* ----- Pilates ----- */
-function renderPilates() {
+/* ----- Thuis trainen: keuzescherm ----- */
+const THUIS_OPTIONS = [
+  { view: 'pilates', emoji: '🧘‍♀️', title: 'Pilates met bord', sub: 'Glijplaat, handgrepen & koorden · volledig scherm' },
+  { view: 'mat', emoji: '🌿', title: 'Pilates op matje', sub: 'Alleen een matje · volledig scherm' },
+  { view: 'dumbbell', emoji: '💪', title: 'Thuis met dumbbell', sub: 'Billen, full body of armen · kg per set' },
+  { view: 'kettlebell', emoji: '🔔', title: 'Thuis met kettlebell', sub: 'Swings, squats & meer · kg per set' },
+];
+function renderThuis() {
   return `
-    ${backHeader('Thuis trainen', 'Pilatesbord met glijplaat, handgrepen & koorden')}
-    <p class="intro">Kies je niveau: de training start op <strong>volledig scherm</strong> en schakelt na de ingestelde tijd
-    vanzelf door naar de volgende oefening. Pauzeren en vooruit/terug kan altijd.</p>
+    ${backHeader('Thuis trainen', 'Waarmee train je vandaag?')}
+    <div class="programs">
+      ${THUIS_OPTIONS.map((o) => `
+        <button class="program-card" data-action="go" data-view="${o.view}">
+          <span class="pc-emoji">${o.emoji}</span>
+          <span class="pc-text"><span class="pc-title">${o.title}</span><span class="pc-sub">${o.sub}</span></span>
+          <span class="chev">›</span>
+        </button>`).join('')}
+    </div>`;
+}
+
+const exGrid = (list) => `
+  <div class="ex-grid">
+    ${list.map((e) => `
+      <button class="card ex-tile" data-action="ex-info" data-id="${e.id}">
+        ${thumb(e.id, { animate: false })}
+        <span>${esc(e.name)}</span>
+        ${e.muscle ? `<span class="muscle-pill">${esc(e.muscle)}</span>` : ''}
+      </button>`).join('')}
+  </div>`;
+
+/* ----- Pilates met bord / op matje (volledig-scherm speler) ----- */
+function renderPilates() {
+  const prog = PLAYER_PROGRAMS[view];
+  return `
+    ${backHeader(prog.title, prog.sub, 'thuis')}
+    <p class="intro">Kies je niveau: de training start op <strong>volledig scherm</strong> en schakelt vanzelf door.
+    Tussen oefeningen krijg je een <strong>wisselmoment</strong> met aftellen en piepjes; bij eenzijdige oefeningen
+    eerst links, dan rechts.</p>
     <section class="card setting">
-      <p class="label">Tijd per set <span class="muted small">(bij herhalingsoefeningen)</span></p>
+      <p class="label">Tijd per set <span class="muted small">(herhalingsoefeningen)</span></p>
       <div class="chips">
         ${[30, 40, 50, 60].map((s) => `<button class="chip ${pilatesWork() === s ? 'on' : ''}" data-action="pilates-work" data-sec="${s}" aria-pressed="${pilatesWork() === s}">${s} sec</button>`).join('')}
       </div>
-      <p class="muted small note">Tijd-oefeningen (plank, hundred) gebruiken hun eigen tijd. Rust hangt af van het niveau.</p>
+      <p class="label">Wisseltijd tussen oefeningen</p>
+      <div class="chips">
+        ${[10, 15, 20, 30].map((s) => `<button class="chip ${pilatesSwitch() === s ? 'on' : ''}" data-action="pilates-switch" data-sec="${s}" aria-pressed="${pilatesSwitch() === s}">${s} sec</button>`).join('')}
+      </div>
+      <p class="muted small note">Plank en hundred gebruiken hun eigen tijd. Rust tussen sets hangt af van het niveau.</p>
     </section>
     <div class="list">
-      ${PILATES_LEVELS.map((l) => {
-        const mins = Math.round((10 + l.items.reduce((n, it) => n + it.sets * ((it.sec ?? pilatesWork()) + l.rest), 0) - l.rest) / 60);
+      ${prog.levels.map((l) => {
+        const segs = buildPlayerSegs(l, l.items.map((it) => newEntry(it.exerciseId, it)));
+        const mins = Math.round(segs.reduce((n, s) => n + s.sec, 0) / 60);
         return `
-        <button class="card level" data-action="start-pilates" data-id="${l.id}">
+        <button class="card level" data-action="start-pilates" data-program="${view}" data-id="${l.id}">
           <span class="level-head"><span class="pc-emoji">${l.emoji}</span><span class="grow"><span class="pc-title">${l.name}</span>
           <span class="pc-sub">${esc(l.desc)} ± ${mins} min · rust ${l.rest} sec</span></span><span class="chev">▶</span></span>
           <span class="level-ex">${l.items.map((it) => esc(exName(it.exerciseId))).join(' · ')}</span>
         </button>`;
       }).join('')}
     </div>
-
     <h2>Alle oefeningen</h2>
-    <div class="ex-grid">
-      ${PILATES_EXERCISES.map((e) => `
-        <button class="card ex-tile" data-action="ex-info" data-id="${e.id}">
-          ${thumb(e.id, { animate: false })}
-          <span>${esc(e.name)}</span>
-        </button>`).join('')}
-    </div>`;
+    ${exGrid(prog.exercises)}`;
+}
+
+/* ----- Thuis met dumbbell / kettlebell (set-tracker met kg) ----- */
+function renderHomeWeights() {
+  const kind = view;
+  const opt = THUIS_OPTIONS.find((o) => o.view === kind);
+  return `
+    ${backHeader(opt.title, 'Kies een schema · kg en reps per set', 'thuis')}
+    <div class="list">
+      ${HOME_TEMPLATES[kind].map((t) => `
+        <div class="card tpl">
+          <button class="tpl-main" data-action="start-home" data-kind="${kind}" data-id="${t.id}">
+            <span class="tpl-name">${esc(t.name)}</span>
+            <span class="tpl-note">${esc(t.note)}</span>
+            <span class="tpl-ex">${esc(t.items.map((i) => exName(i.exerciseId)).join(' · '))}</span>
+          </button>
+          <span class="chev" style="margin-right:16px">▶</span>
+        </div>`).join('')}
+    </div>
+    <button class="btn ghost block" data-action="start-home-empty" data-kind="${kind}">Of start een lege workout</button>
+    <h2>Alle oefeningen</h2>
+    ${exGrid(HOME_EXERCISES.filter((e) => e.program === kind))}`;
 }
 
 /* ----- Basic-Fit ----- */
@@ -896,7 +1002,8 @@ function renderEntry(entry) {
             <button class="icon-btn" data-action="remove-exercise" aria-label="${esc(entry.name)} verwijderen">✕</button>
           </div>
           ${ex?.muscle ? `<p class="muscle-line"><span class="muscle-pill">💪 ${esc(ex.muscle)}</span></p>` : ''}
-          ${entry.target ? `<p class="target">🎯 ${entry.sets.length} × ${esc(entry.target)}</p>` : ''}
+          ${ex?.side ? `<p class="side-line"><span class="side-pill side-${ex.side}">${ex.side === 'L' ? '⬅ Linkerbeen' : 'Rechterbeen ➡'}</span></p>` : ''}
+          ${entry.target ? `<p class="target">🎯 ${setsPerSide(entry)} × ${esc(entry.target)}</p>` : ''}
           <div class="ex-actions">
             <button class="chip small-chip" data-action="ex-info" data-id="${esc(entry.exerciseId)}">ⓘ Uitleg</button>
             ${entry.alts ? `<button class="chip small-chip" data-action="swap">⇄ Wissel</button>` : ''}
@@ -904,21 +1011,32 @@ function renderEntry(entry) {
         </div>
       </div>
       ${ex?.tip ? `<p class="tip">💡 ${esc(ex.tip)}</p>` : ''}
+      <label class="note-wrap">📝
+        <input class="note-input" data-note="${esc(entry.exerciseId)}" value="${esc(db.notes?.[entry.exerciseId] ?? '')}"
+          placeholder="Notitie (bv. stoel op stand 4, band rood)" maxlength="300" autocomplete="off" enterkeyhint="done">
+      </label>
       <p class="prev">${esc(summary)}</p>
+      ${entry.uni ? `<p class="uni-hint">↔ Eenzijdig: doe per set eerst <strong>${sideLabel('L', entry.uni)}</strong>, dan <strong>${sideLabel('R', entry.uni)}</strong>.</p>` : ''}
       <div class="sets">
-        <div class="set-row k-${entry.kind} head"><span>Set</span><span>Vorige</span>${kindCols}</div>
+        <div class="set-row k-${entry.kind} ${entry.uni ? 'uni' : ''} head"><span>Set</span><span>Vorige</span>${kindCols}</div>
         ${entry.sets.map((s, i) => renderSet(entry, s, i, prev)).join('')}
       </div>
       <div class="row">
-        <button class="btn small" data-action="add-set">+ Set</button>
-        ${entry.sets.length > 1 ? `<button class="btn small ghost" data-action="remove-set">− Laatste set</button>` : ''}
+        <button class="btn small" data-action="add-set">+ Set${entry.uni ? ' (L + R)' : ''}</button>
+        ${setsPerSide(entry) > 1 ? `<button class="btn small ghost" data-action="remove-set">− Laatste set</button>` : ''}
       </div>
     </article>`;
 }
 
+const setsPerSide = (entry) => (entry.uni ? Math.ceil(entry.sets.length / 2) : entry.sets.length);
+
 function renderSet(entry, s, i, prev) {
   const ph = placeholderFor(entry, i, prev);
-  const p = prev?.sets[i];
+  const p = prevSetFor(entry, i, prev);
+  const setNo = entry.uni ? Math.floor(i / 2) + 1 : i + 1;
+  const numCell = s.side
+    ? `<span class="set-num uni-num side-${s.side}">${setNo}<small>${sideLabel(s.side, entry.uni || 'kant')}</small></span>`
+    : `<span class="set-num">${setNo}</span>`;
   const kgInput = `<input class="num" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="next"
       data-field="kg" aria-label="Set ${i + 1} kg" value="${fmtNum(s.kg)}" placeholder="${fmtNum(ph.kg)}">`;
   const repsInput = `<input class="num" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="done"
@@ -931,8 +1049,8 @@ function renderSet(entry, s, i, prev) {
     time: `${secInput}<button class="play" data-action="work-timer" aria-label="Start ${ph.sec ?? ''} seconden">▶</button>`,
   }[entry.kind];
   return `
-    <div class="set-row k-${entry.kind} ${s.done ? 'done' : ''}" data-set="${i}">
-      <span class="set-num">${i + 1}</span>
+    <div class="set-row k-${entry.kind} ${s.side ? `uni side-${s.side}` : ''} ${s.done ? 'done' : ''}" data-set="${i}">
+      ${numCell}
       <span class="set-prev">${p ? esc(fmtSetShort(p, entry.kind)) : '–'}</span>
       ${inputs}
       <button class="check" data-action="toggle-set" aria-pressed="${s.done}" aria-label="Set ${i + 1} afronden">✓</button>
@@ -1100,8 +1218,14 @@ function updateLive() {
         if (bar) bar.style.width = '100%';
       } else {
         const left = r.paused ? r.pausedLeft : r.endAt - Date.now();
-        t.textContent = fmtClock(Math.ceil(left / 1000 - 0.001));
+        const secsLeft = Math.ceil(left / 1000 - 0.001);
+        t.textContent = fmtClock(secsLeft);
         if (bar) bar.style.width = `${Math.min(100, (1 - left / (seg.sec * 1000)) * 100)}%`;
+        // laatste 3 seconden: zichtbaar aftellen + korte piepjes (één per seconde)
+        const counting = !r.paused && secsLeft >= 1 && secsLeft <= 3;
+        app.querySelector('.player, .run-now')?.classList.toggle('countdown', counting);
+        const key = `${r.i}:${secsLeft}`;
+        if (counting && lastCountKey !== key) { lastCountKey = key; tick(); }
       }
     }
     const tot = $('#run-total');
@@ -1340,27 +1464,43 @@ async function startSession({ program, name, templateId = null, items = [], rest
 }
 
 const pilatesWork = () => db.settings.pilatesWork || 40;
+const pilatesSwitch = () => db.settings.pilatesSwitch || 15;
 const PREP_SEC = 10;
+const SIDE_SEC = 5;
 
-/** Start een pilatesniveau als volledig-scherm speler die automatisch doorschakelt. */
-async function startPilates(levelId) {
-  const l = PILATES_LEVELS.find((x) => x.id === levelId);
+/**
+ * Tijdlijn van de speler: klaarmaken → oefening 1 (set, rust, set…) → WISSEL → oefening 2 …
+ * Eenzijdig: per set eerst links, korte kant-wissel, dan rechts.
+ */
+function buildPlayerSegs(level, exercises) {
+  const segs = [{ type: 'prep', sec: PREP_SEC }];
+  exercises.forEach((e, ei) => {
+    if (ei > 0) segs.push({ type: 'switch', e: ei, sec: pilatesSwitch() });
+    e.sets.forEach((set, si) => {
+      if (si > 0) segs.push(set.side === 'R' ? { type: 'side', e: ei, s: si, sec: SIDE_SEC } : { type: 'rest', e: ei, s: si, sec: level.rest });
+      segs.push({ type: 'work', e: ei, s: si, side: set.side || null, sec: e.kind === 'time' ? (e.targetSec || 30) : pilatesWork() });
+    });
+  });
+  return segs;
+}
+
+/** Start een niveau (pilates met bord of op matje) als volledig-scherm speler die automatisch doorschakelt. */
+async function startPilates(levelId, programKey = 'pilates') {
+  const prog = PLAYER_PROGRAMS[programKey] || PLAYER_PROGRAMS.pilates;
+  const l = prog.levels.find((x) => x.id === levelId);
   if (!l || !(await confirmReplaceActive())) return;
   enterFullscreen(); // zo vroeg mogelijk: moet binnen de tik van de gebruiker
-  const exercises = l.items.map((it) => newEntry(it.exerciseId, {
-    sets: it.sets, sec: it.sec ?? null,
-    target: it.sec ? `${it.sec} sec` : `${it.reps}${it.perSide ? ' per kant' : ''}`,
-  }));
-  // tijdlijn: klaarmaken → (set → rust) … → laatste set
-  const segs = [{ type: 'prep', sec: PREP_SEC }];
-  exercises.forEach((e, ei) => e.sets.forEach((_, si) => {
-    segs.push({ type: 'work', e: ei, s: si, sec: e.kind === 'time' ? (e.targetSec || 30) : pilatesWork() });
-    const last = ei === exercises.length - 1 && si === e.sets.length - 1;
-    if (!last) segs.push({ type: 'rest', e: ei, s: si, sec: l.rest });
-  }));
+  const exercises = l.items.map((it) => {
+    const uni = exById(it.exerciseId)?.uni;
+    return newEntry(it.exerciseId, {
+      sets: it.sets, sec: it.sec ?? null,
+      target: it.sec ? `${it.sec} sec` : `${it.reps}${it.perSide && !uni ? ' per kant' : ''}`,
+    });
+  });
+  const segs = buildPlayerSegs(l, exercises);
   const now = Date.now();
   db.active = {
-    id: uid(), program: 'pilates', templateId: l.id, name: `Pilatesbord · ${l.name}`,
+    id: uid(), program: 'pilates', templateId: l.id, name: `${prog.short} · ${l.name}`,
     startedAt: new Date(now).toISOString(), finishedAt: null, hr: null, restSec: l.rest, exercises,
     run: { segs, i: 0, segStart: now, endAt: now + PREP_SEC * 1000, paused: false, pausedLeft: null },
   };
@@ -1402,7 +1542,13 @@ function renderPlayer() {
   const shown = finished ? null : seg.type === 'work' ? seg : r.segs.slice(r.i + 1).find((s) => s.type === 'work');
   const entry = shown ? a.exercises[shown.e] : null;
   const ex = entry ? exById(entry.exerciseId) : null;
-  const phase = finished ? '' : seg.type === 'work' ? 'Oefenen' : seg.type === 'rest' ? 'Rust — hierna' : 'Maak je klaar — eerst';
+  const PHASES = {
+    work: 'Oefenen', rest: 'Rust — volgende set', side: '↔ Wissel van kant',
+    switch: '🔄 Wissel van houding — volgende oefening', prep: 'Maak je klaar — eerst',
+  };
+  const phase = finished ? '' : PHASES[seg.type];
+  const setNo = shown ? (entry.uni ? Math.floor(shown.s / 2) + 1 : shown.s + 1) : 0;
+  const note = entry ? db.notes?.[entry.exerciseId] : '';
   return `
     <div class="player phase-${finished ? 'done' : seg.type} ${r.paused ? 'paused' : ''}" role="region" aria-label="Pilates-speler">
       <div class="player-top">
@@ -1422,8 +1568,10 @@ function renderPlayer() {
         <p class="player-phase">${phase}</p>
         <button class="player-fig" data-action="ex-info" data-id="${esc(entry.exerciseId)}" aria-label="Uitleg ${esc(entry.name)}">${thumb(entry.exerciseId)}</button>
         <p class="player-name">${esc(entry.name)}</p>
-        <p class="player-meta">Set ${shown.s + 1}/${entry.sets.length} · 🎯 ${esc(entry.target)}</p>
+        ${shown.side ? `<p class="center"><span class="side-pill big side-${shown.side}">${shown.side === 'L' ? '⬅ ' : ''}${sideLabel(shown.side, entry.uni || 'kant')}${shown.side === 'R' ? ' ➡' : ''}</span></p>` : ''}
+        <p class="player-meta">Set ${setNo}/${setsPerSide(entry)} · 🎯 ${esc(entry.target)}</p>
         ${ex?.muscle ? `<p class="center"><span class="muscle-pill">💪 ${esc(ex.muscle)}</span></p>` : ''}
+        ${note ? `<p class="player-note">📝 ${esc(note)}</p>` : ''}
         <p class="player-time" id="run-time">–:–</p>
         <div class="run-progress"><div id="run-bar"></div></div>
         <p class="center small muted">${r.paused ? '⏸ Gepauzeerd' : seg.type === 'work' ? 'Schakelt vanzelf door' : ''}</p>
@@ -1548,8 +1696,11 @@ function cueText(seg) {
   if (a?.program === 'pilates') {
     const nextWork = seg.type === 'work' ? seg : a.run.segs.slice(a.run.i + 1).find((s) => s.type === 'work');
     const e = nextWork ? a.exercises[nextWork.e] : null;
-    if (seg.type === 'work') return `${e.name}. Set ${seg.s + 1} van ${e.sets.length}.`;
-    if (seg.type === 'rest') return `Rust. Hierna: ${e?.name ?? ''}.`;
+    const sideTxt = nextWork?.side ? ` ${sideLabel(nextWork.side, e?.uni || 'kant')}.` : '';
+    if (seg.type === 'work') return `${e.name}.${sideTxt}`;
+    if (seg.type === 'rest') return 'Rust. Volgende set komt eraan.';
+    if (seg.type === 'side') return `Wissel van kant.${sideTxt}`;
+    if (seg.type === 'switch') return `Wissel van houding. Hierna: ${e?.name ?? ''}.`;
     return `Maak je klaar. Eerste oefening: ${e?.name ?? ''}.`;
   }
   return seg.type === 'run' ? 'Hardlopen!' : seg.type === 'walk' ? 'Wandelen' : seg.type === 'cooldown' ? 'Cooling-down. Rustig uitwandelen.' : 'Warming-up. Rustig wandelen.';
@@ -1820,6 +1971,24 @@ function unlockAudio() {
 }
 document.addEventListener('pointerdown', unlockAudio, { passive: true });
 
+/** Kort tikje voor het aftellen (3-2-1). */
+let lastCountKey = '';
+function tick() {
+  navigator.vibrate?.(35);
+  if (!audioCtx) return;
+  const t0 = audioCtx.currentTime + 0.01;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = 660;
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t0);
+  osc.stop(t0 + 0.15);
+}
+
 function alarm() {
   navigator.vibrate?.([250, 120, 250, 120, 450]);
   if (!audioCtx) return;
@@ -1886,7 +2055,14 @@ async function handleAction(action, btn) {
     case 'more-history': historyLimit += 10; render(); break;
 
     /* Starten */
-    case 'start-pilates': startPilates(btn.dataset.id); break;
+    case 'start-pilates': startPilates(btn.dataset.id, btn.dataset.program); break;
+    case 'start-home': {
+      const t = HOME_TEMPLATES[btn.dataset.kind]?.find((x) => x.id === btn.dataset.id);
+      const tool = btn.dataset.kind === 'dumbbell' ? 'Dumbbell' : 'Kettlebell';
+      if (t) startSession({ program: btn.dataset.kind, name: `${tool} · ${t.name}`, templateId: t.id, items: t.items });
+      break;
+    }
+    case 'start-home-empty': startSession({ program: btn.dataset.kind, name: PROGRAMS[btn.dataset.kind].label }); break;
     case 'start-gym': {
       const t = db.templates.find((x) => x.id === btn.dataset.id);
       if (t) startSession({ program: 'gym', name: t.name, templateId: t.id, items: t.items });
@@ -1919,12 +2095,13 @@ async function handleAction(action, btn) {
       break;
     case 'add-set':
       if (!entry) break;
-      entry.sets.push({ kg: null, reps: null, sec: null, done: false });
+      if (entry.uni) entry.sets.push(emptySet('L'), emptySet('R'));
+      else entry.sets.push(emptySet());
       saveNow(); render();
       break;
     case 'remove-set':
-      if (!entry || entry.sets.length <= 1) break;
-      entry.sets.pop();
+      if (!entry || setsPerSide(entry) <= 1) break;
+      entry.sets.splice(entry.uni ? -2 : -1);
       saveNow(); render();
       break;
     case 'toggle-set': if (entry && setIdx >= 0) toggleSet(entry, setIdx); break;
@@ -1997,6 +2174,27 @@ async function handleAction(action, btn) {
       db.settings.pilatesWork = Number(btn.dataset.sec);
       saveNow(); render();
       break;
+    case 'pilates-switch':
+      db.settings.pilatesSwitch = Number(btn.dataset.sec);
+      saveNow(); render();
+      break;
+    case 'reset-person': {
+      const me = personById(personId);
+      const choice = await choiceDialog(`Alle gegevens van ${me.name} wissen? Dit kan niet ongedaan worden (behalve met een backup).`, [
+        { value: 'cancel', label: 'Annuleer' },
+        { value: 'backup', label: 'Eerst backup, dan resetten', cls: 'primary' },
+        { value: 'reset', label: 'Alleen resetten', cls: 'danger-fill' },
+      ]);
+      if (choice !== 'backup' && choice !== 'reset') break;
+      if (choice === 'backup') exportBackup();
+      try { localStorage.setItem(`${dataKey(personId)}:before-reset`, JSON.stringify(db)); } catch (_) { /* vol */ }
+      stopTimer();
+      db = defaultDb();
+      saveNow();
+      go('home');
+      toast(`${me.name} begint opnieuw ✨`);
+      break;
+    }
     case 'pick-person': selectPerson(btn.dataset.person); break;
     case 'legacy-assign': {
       const p = personById(btn.dataset.person);
@@ -2115,6 +2313,13 @@ document.addEventListener('input', (e) => {
     if (editing.items[idx]) editing.items[idx][el.dataset.tplfield] = el.value;
     return;
   }
+  if (el.dataset.note) { // vaste notitie per oefening, per profiel
+    const v = el.value.slice(0, 300);
+    if (!db.notes) db.notes = {};
+    if (v.trim()) db.notes[el.dataset.note] = v; else delete db.notes[el.dataset.note];
+    saveSoon();
+    return;
+  }
   if (el.dataset.profile) {
     const n = parseNum(el.value);
     db.profile[el.dataset.profile] = n ? Math.round(n) : null;
@@ -2147,7 +2352,7 @@ document.addEventListener('keydown', (e) => {
   const id = e.target.id;
   if (id === 'tpl-search') { e.preventDefault(); $('#tpl-pick .pick')?.click(); }
   if (id === 'ex-search') { e.preventDefault(); $('#ex-results .pick')?.click(); }
-  if (e.target.dataset?.field || e.target.dataset?.profile) e.target.blur();
+  if (e.target.dataset?.field || e.target.dataset?.profile || e.target.dataset?.note) e.target.blur();
 });
 
 /* ---------- Init ---------- */
