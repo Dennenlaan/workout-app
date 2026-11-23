@@ -6,8 +6,15 @@
    ========================================================= */
 
 /* ---------- Constants ---------- */
-const STORAGE_KEY = 'workout-tracker:v1';
+const STORAGE_KEY = 'workout-tracker:v1';          // legacy (vóór profielen) + prefix
 const TIMER_KEY = 'workout-tracker:timer';
+const PERSON_KEY = 'workout-tracker:person';       // laatst gekozen persoon
+const PEOPLE = [
+  { id: 'mama', name: 'Mama', emoji: '🌷' },
+  { id: 'senna', name: 'Senna', emoji: '🌸' },
+];
+const dataKey = (pid) => `${STORAGE_KEY}:${pid}`;  // per persoon: workout-tracker:v1:<id>
+const personById = (pid) => PEOPLE.find((p) => p.id === pid);
 const SCHEMA_VERSION = 3;
 const BUILTIN_TEMPLATE_IDS = ['bf-arms', 'bf-full', 'bf-bil1', 'bf-bil2', 'bf-bil3'];
 const DEFAULT_SETS = 3;
@@ -197,25 +204,62 @@ function normalizeDb(raw) {
   return db;
 }
 
-function load() {
+function load(pid) {
   let rawStr = null;
   try {
-    rawStr = localStorage.getItem(STORAGE_KEY);
+    rawStr = localStorage.getItem(dataKey(pid));
     if (!rawStr) return defaultDb();
     return normalizeDb(JSON.parse(rawStr));
   } catch (err) {
     console.error('Kon data niet laden', err);
-    try { if (rawStr) localStorage.setItem(`${STORAGE_KEY}:corrupt-${Date.now()}`, rawStr); } catch (_) { /* vol */ }
+    try { if (rawStr) localStorage.setItem(`${dataKey(pid)}:corrupt-${Date.now()}`, rawStr); } catch (_) { /* vol */ }
     return defaultDb();
   }
+}
+
+/** Korte samenvatting van een profiel voor de profielkeuze (zonder het te activeren). */
+function personSummary(pid) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(dataKey(pid)) || 'null');
+    if (!raw) return { count: 0, last: null, active: null };
+    const hist = Array.isArray(raw.history) ? raw.history : [];
+    const last = hist.map((s) => s.startedAt).sort().pop() || null;
+    return { count: hist.length, last, active: raw.active?.name || null };
+  } catch (_) { return { count: 0, last: null, active: null }; }
+}
+
+/** Gegevens van vóór de profielen (één gedeelde opslag). Alleen relevant als er echt iets in staat. */
+function legacyData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    const meaningful = (d.history?.length || 0) > 0 || !!d.active || (d.exercises?.length || 0) > 0
+      || (d.templates || []).some((t) => !BUILTIN_TEMPLATE_IDS.includes(t.id) && !['tpl-upper', 'tpl-lower', 'tpl-full'].includes(t.id));
+    if (!meaningful) { // lege testdata: opruimen
+      localStorage.setItem(`${STORAGE_KEY}:legacy-backup`, raw);
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return { raw, count: d.history?.length || 0 };
+  } catch (_) { return null; }
+}
+function assignLegacy(pid) {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw || localStorage.getItem(dataKey(pid))) return false;
+  localStorage.setItem(dataKey(pid), raw);
+  localStorage.setItem(`${STORAGE_KEY}:legacy-backup`, raw);
+  localStorage.removeItem(STORAGE_KEY);
+  return true;
 }
 
 let saveTimer = null;
 function saveNow() {
   clearTimeout(saveTimer);
   saveTimer = null;
+  if (!personId) return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+    localStorage.setItem(dataKey(personId), JSON.stringify(db));
   } catch (err) {
     console.error(err);
     toast('⚠️ Opslaan mislukt — maak een backup!');
@@ -236,10 +280,25 @@ const exName = (id) => exById(id)?.name ?? 'Onbekende oefening';
 const exercisesFor = (program) => [...CATALOG, ...db.exercises].filter((e) => e.program === program);
 
 /* ---------- State ---------- */
-let db = load();
-let view = db.active ? 'workout' : 'home';
+let personId = null;  // wie traint er nu (Mama / Senna)
+let db = defaultDb(); // data van de gekozen persoon (leeg tot er gekozen is)
+let view = 'who';     // begint altijd op de profielkeuze
 let editing = null;   // template-editor state
 let historyLimit = 10;
+
+function selectPerson(pid, { quiet = false } = {}) {
+  if (!personById(pid)) return;
+  flushSave();
+  if (personId && personId !== pid) stopTimer();
+  personId = pid;
+  try { localStorage.setItem(PERSON_KEY, pid); } catch (_) { /* ignore */ }
+  db = load(pid);
+  historyLimit = 10;
+  view = db.active ? 'workout' : 'home';
+  render();
+  window.scrollTo(0, 0);
+  if (!quiet) toast(`Hoi ${personById(pid).name}! ${personById(pid).emoji}`);
+}
 
 /** Laatste afgeronde prestatie op een oefening: { date, sets } of null. */
 function findPrevious(exerciseId) {
@@ -352,11 +411,17 @@ const app = $('#app');
 const timerEl = $('#timer');
 
 function render() {
+  if (!personId) view = 'who';
   if (view === 'workout' && !db.active) view = 'home';
-  const isRun = view === 'workout' && db.active?.program === 'run';
-  const renderers = { home: renderHome, run: renderRun, pilates: renderPilates, gym: renderGym, heart: renderHeart, log: renderLog };
-  app.innerHTML = view === 'workout' ? (isRun ? renderRunSession() : renderWorkout()) : renderers[view]();
-  const showTimer = view === 'workout' && !isRun;
+  const timed = view === 'workout' && !!db.active?.run;          // run-sessie of pilates-speler
+  const isPlayer = timed && db.active.program === 'pilates';
+  const renderers = { who: renderWho, home: renderHome, run: renderRun, pilates: renderPilates, gym: renderGym, heart: renderHeart, log: renderLog };
+  app.innerHTML = view === 'workout'
+    ? (timed ? (isPlayer ? renderPlayer() : renderRunSession()) : renderWorkout())
+    : renderers[view]();
+  document.body.classList.toggle('player-open', isPlayer);
+  if (!isPlayer) exitFullscreen();
+  const showTimer = view === 'workout' && !timed;
   timerEl.hidden = !showTimer;
   document.body.classList.toggle('has-timer', showTimer);
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -385,6 +450,43 @@ function greeting() {
   return h < 6 ? 'Goedenacht' : h < 12 ? 'Goedemorgen' : h < 18 ? 'Goedemiddag' : 'Goedenavond';
 }
 
+/* ----- Profielkeuze (beginpagina) ----- */
+function renderWho() {
+  const legacy = legacyData();
+  const freeForLegacy = PEOPLE.filter((p) => !localStorage.getItem(dataKey(p.id)));
+  const last = localStorage.getItem(PERSON_KEY);
+  return `
+    ${personId ? `<button class="icon-btn back who-back" data-action="go" data-view="home" aria-label="Terug">‹</button>` : ''}
+    <header class="who-top">
+      <span class="who-logo">💗</span>
+      <h1>Wie gaat er trainen?</h1>
+      <p class="sub">Iedereen heeft haar eigen schema's, gewichten en voortgang.</p>
+    </header>
+
+    ${legacy && freeForLegacy.length ? `
+      <section class="card legacy">
+        <p><strong>Er staan al ${plural(legacy.count, 'training', 'trainingen')} op dit toestel</strong> (van vóór de profielen).
+        Van wie zijn die?</p>
+        <div class="row">
+          ${freeForLegacy.map((p) => `<button class="btn" data-action="legacy-assign" data-person="${p.id}">${p.emoji} Van ${esc(p.name)}</button>`).join('')}
+        </div>
+      </section>` : ''}
+
+    <div class="people">
+      ${PEOPLE.map((p) => {
+        const s = personSummary(p.id);
+        const sub = s.active ? `⏱ ${esc(s.active)} is nog bezig`
+          : s.count ? `${plural(s.count, 'training', 'trainingen')} · laatst ${relDays(s.last)}` : 'Nog geen trainingen';
+        return `
+          <button class="person-card ${p.id === last ? 'last' : ''}" data-action="pick-person" data-person="${p.id}">
+            <span class="person-emoji">${p.emoji}</span>
+            <span class="person-name">${esc(p.name)}</span>
+            <span class="person-sub">${sub}</span>
+          </button>`;
+      }).join('')}
+    </div>`;
+}
+
 /* ----- Home ----- */
 function renderHome() {
   const a = db.active;
@@ -397,8 +499,11 @@ function renderHome() {
   return `
     <header class="home-top">
       <div class="grow">
-        <h1>${greeting()} 💗</h1>
+        <h1>${greeting()}, ${esc(personById(personId).name)} ${personById(personId).emoji}</h1>
         <p class="sub">Wat gaan we vandaag doen?</p>
+        <button class="person-chip" data-action="go" data-view="who" aria-label="Wissel van profiel">
+          ${personById(personId).emoji} ${esc(personById(personId).name)} <span class="muted">· wisselen ⇄</span>
+        </button>
       </div>
       <button class="icon-btn log-btn" data-action="go" data-view="log" aria-label="Geschiedenis & backup"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4.5v4h4"/><path d="M12 7.5V12l3 2"/></svg>${backupDue ? '<span class="icon-dot"></span>' : ''}</button>
     </header>
@@ -621,14 +726,22 @@ function renderRunSession() {
 function renderPilates() {
   return `
     ${backHeader('Thuis trainen', 'Pilatesbord met glijplaat, handgrepen & koorden')}
-    <p class="intro">Kies je niveau. Elke oefening heeft een bewegend voorbeeld; tik erop voor de stap-voor-stap uitleg.</p>
+    <p class="intro">Kies je niveau: de training start op <strong>volledig scherm</strong> en schakelt na de ingestelde tijd
+    vanzelf door naar de volgende oefening. Pauzeren en vooruit/terug kan altijd.</p>
+    <section class="card setting">
+      <p class="label">Tijd per set <span class="muted small">(bij herhalingsoefeningen)</span></p>
+      <div class="chips">
+        ${[30, 40, 50, 60].map((s) => `<button class="chip ${pilatesWork() === s ? 'on' : ''}" data-action="pilates-work" data-sec="${s}" aria-pressed="${pilatesWork() === s}">${s} sec</button>`).join('')}
+      </div>
+      <p class="muted small note">Tijd-oefeningen (plank, hundred) gebruiken hun eigen tijd. Rust hangt af van het niveau.</p>
+    </section>
     <div class="list">
       ${PILATES_LEVELS.map((l) => {
-        const mins = Math.round(l.items.reduce((n, it) => n + it.sets * ((it.sec ?? (it.reps * (it.perSide ? 2 : 1) * 3)) + l.rest), 0) / 60);
+        const mins = Math.round((10 + l.items.reduce((n, it) => n + it.sets * ((it.sec ?? pilatesWork()) + l.rest), 0) - l.rest) / 60);
         return `
         <button class="card level" data-action="start-pilates" data-id="${l.id}">
           <span class="level-head"><span class="pc-emoji">${l.emoji}</span><span class="grow"><span class="pc-title">${l.name}</span>
-          <span class="pc-sub">${esc(l.desc)} ± ${mins} min</span></span><span class="chev">▶</span></span>
+          <span class="pc-sub">${esc(l.desc)} ± ${mins} min · rust ${l.rest} sec</span></span><span class="chev">▶</span></span>
           <span class="level-ex">${l.items.map((it) => esc(exName(it.exerciseId))).join(' · ')}</span>
         </button>`;
       }).join('')}
@@ -645,27 +758,42 @@ function renderPilates() {
 }
 
 /* ----- Basic-Fit ----- */
+const isOwnTemplate = (t) => !BUILTIN_TEMPLATE_IDS.includes(t.id);
+
+function tplCard(t) {
+  const own = isOwnTemplate(t);
+  return `
+    <div class="card tpl ${own ? 'own' : ''}">
+      ${t.focus ? `<span class="glute-badge" title="${esc(GLUTE_INFO[t.focus].name)}">${gluteSVG(t.focus)}</span>` : ''}
+      <button class="tpl-main" data-action="start-gym" data-id="${esc(t.id)}">
+        <span class="tpl-name">${esc(t.name)}</span>
+        ${own ? `<span class="tpl-note muscle">Eigen schema · ${plural(t.items.length, 'oefening', 'oefeningen')}</span>`
+          : t.note ? `<span class="tpl-note ${t.focus ? 'muscle' : ''}">${esc(t.note)}</span>` : ''}
+        <span class="tpl-ex">${esc(t.items.map((i) => exName(i.exerciseId)).join(' · ') || 'Nog geen oefeningen')}</span>
+      </button>
+      <button class="icon-btn" data-action="edit-template" data-id="${esc(t.id)}" aria-label="${esc(t.name)} bewerken">✎</button>
+    </div>`;
+}
+
 function renderGym() {
+  const builtin = db.templates.filter((t) => !isOwnTemplate(t));
+  const own = db.templates.filter(isOwnTemplate);
   return `
     ${backHeader('Basic-Fit', 'Kies je schema')}
-    <div class="list">
-      ${db.templates.map((t) => `
-        <div class="card tpl">
-          ${t.focus ? `<span class="glute-badge" title="${esc(GLUTE_INFO[t.focus].name)}">${gluteSVG(t.focus)}</span>` : ''}
-          <button class="tpl-main" data-action="start-gym" data-id="${esc(t.id)}">
-            <span class="tpl-name">${esc(t.name)}</span>
-            ${t.note ? `<span class="tpl-note ${t.focus ? 'muscle' : ''}">${esc(t.note)}</span>` : ''}
-            <span class="tpl-ex">${esc(t.items.map((i) => exName(i.exerciseId)).join(' · ') || 'Nog geen oefeningen')}</span>
-          </button>
-          <button class="icon-btn" data-action="edit-template" data-id="${esc(t.id)}" aria-label="${esc(t.name)} bewerken">✎</button>
-        </div>`).join('')}
-    </div>
-    <div class="row">
-      <button class="btn" data-action="new-template">+ Nieuw schema</button>
-      <button class="btn" data-action="start-empty">Lege workout</button>
-    </div>
+    <div class="list">${builtin.map(tplCard).join('')}</div>
     ${GYM_TEMPLATES.some((g) => !db.templates.find((t) => t.id === g.id))
-      ? `<button class="btn ghost block" data-action="restore-templates">Standaardschema's terugzetten</button>` : ''}`;
+      ? `<button class="btn ghost block" data-action="restore-templates">Standaardschema's terugzetten</button>` : ''}
+
+    <h2 class="own-head">✨ Mijn eigen schema's</h2>
+    <div class="list">
+      ${own.map(tplCard).join('')}
+      <button class="create-card" data-action="new-template">
+        <span class="create-plus">＋</span>
+        <span><strong>Maak je eigen schema</strong><br>
+        <span class="small">Kies oefeningen, zet ze in je eigen volgorde en sla op om later te gebruiken.</span></span>
+      </button>
+    </div>
+    <button class="btn ghost block" data-action="start-empty">Of start een lege workout</button>`;
 }
 
 /* ----- Hartslag ----- */
@@ -767,6 +895,7 @@ function renderEntry(entry) {
             <h3>${esc(entry.name)}</h3>
             <button class="icon-btn" data-action="remove-exercise" aria-label="${esc(entry.name)} verwijderen">✕</button>
           </div>
+          ${ex?.muscle ? `<p class="muscle-line"><span class="muscle-pill">💪 ${esc(ex.muscle)}</span></p>` : ''}
           ${entry.target ? `<p class="target">🎯 ${entry.sets.length} × ${esc(entry.target)}</p>` : ''}
           <div class="ex-actions">
             <button class="chip small-chip" data-action="ex-info" data-id="${esc(entry.exerciseId)}">ⓘ Uitleg</button>
@@ -960,7 +1089,7 @@ function updateLive() {
   if (view !== 'workout' || !a) return;
   const el = $('#elapsed');
   if (el) el.textContent = `⏱ ${fmtClock((Date.now() - new Date(a.startedAt)) / 1000)}`;
-  if (a.program === 'run') {
+  if (a.run) {
     const r = a.run;
     const seg = r.segs[r.i];
     const t = $('#run-time');
@@ -1057,6 +1186,7 @@ function openExerciseInfo(id) {
     <div class="sheet-inner">
       ${sheetHead(esc(ex.name))}
       <div class="fig-big">${thumb(id)}</div>
+      ${ex.muscle ? `<p class="center"><span class="muscle-pill">💪 Traint vooral: ${esc(ex.muscle)}</span></p>` : ''}
       ${ex.equipment ? `<p class="muted small center">🧰 ${esc(ex.equipment)}</p>` : ''}
       ${ex.steps ? `<ol class="steps">${ex.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
       ${ex.tip ? `<p class="tip big-tip">💡 ${esc(ex.tip)}</p>` : ''}
@@ -1087,7 +1217,8 @@ function renderPickResults(q) {
     list.map((e) => `
       <button class="pick" data-action="pick-exercise" data-id="${esc(e.id)}">
         ${thumb(e.id, { animate: false })}
-        <span>${esc(e.name)}${inWorkout.has(e.id) ? ' <span class="muted small">(al toegevoegd)</span>' : ''}</span>
+        <span class="grow"><span class="pick-name">${esc(e.name)}${inWorkout.has(e.id) ? ' <span class="muted small">(al toegevoegd)</span>' : ''}</span>
+        ${e.muscle ? `<span class="muscle-pill">${esc(e.muscle)}</span>` : ''}</span>
       </button>`).join('');
 }
 function addExerciseToWorkout(exerciseId) {
@@ -1098,16 +1229,30 @@ function addExerciseToWorkout(exerciseId) {
   requestAnimationFrame(() => [...app.querySelectorAll('.exercise')].pop()?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
 }
 function openSwap(entry) {
+  const cur = exById(entry.exerciseId);
   openSheet(`
     <div class="sheet-inner">
       ${sheetHead('Wissel oefening')}
-      <p class="muted small">Kies een alternatief. Je ingevulde sets blijven staan.</p>
+      <div class="swap-now">
+        <span class="small muted">Nu</span>
+        <strong>${esc(cur?.name ?? entry.name)}</strong>
+        ${cur?.muscle ? `<span class="muscle-pill">💪 ${esc(cur.muscle)}</span>` : ''}
+      </div>
+      <p class="muted small">Kies een alternatief. Bij elke optie zie je welke spiergroep je het meest traint. Je ingevulde sets blijven staan.</p>
       <div class="pick-list">
-        ${entry.alts.map((id) => `
-          <button class="pick ${id === entry.exerciseId ? 'selected' : ''}" data-action="swap-to" data-entry-id="${esc(entry.id)}" data-id="${esc(id)}">
+        ${entry.alts.filter((id) => id !== entry.exerciseId).map((id) => {
+          const ex = exById(id);
+          const same = ex?.muscle && ex.muscle === cur?.muscle;
+          return `
+          <button class="pick swap-opt" data-action="swap-to" data-entry-id="${esc(entry.id)}" data-id="${esc(id)}">
             ${thumb(id, { animate: false })}
-            <span>${esc(exName(id))}${id === entry.exerciseId ? ' <span class="small">(huidig)</span>' : ''}</span>
-          </button>`).join('')}
+            <span class="grow">
+              <span class="pick-name">${esc(ex?.name ?? id)}</span>
+              ${ex?.muscle ? `<span class="muscle-pill">💪 ${esc(ex.muscle)}</span>` : ''}
+              <span class="swap-tag ${same ? 'same' : 'diff'}">${same ? '✓ zelfde spiergroep' : '↺ andere focus'}</span>
+            </span>
+          </button>`;
+        }).join('')}
       </div>
     </div>`);
 }
@@ -1116,16 +1261,17 @@ function openSwap(entry) {
 function openTemplateEditor(id) {
   const t = id ? db.templates.find((x) => x.id === id) : null;
   editing = { id: t?.id ?? null, name: t?.name ?? '', note: t?.note ?? '', items: clone(t?.items ?? []), q: '' };
+  const own = !t || isOwnTemplate(t);
   openSheet(`
-    <div class="sheet-inner">
-      ${sheetHead(t ? 'Schema bewerken' : 'Nieuw schema')}
+    <div class="sheet-inner editor ${own ? 'own' : ''}">
+      ${sheetHead(t ? (own ? '✨ Eigen schema bewerken' : 'Schema bewerken') : '✨ Eigen schema maken')}
       <label class="label">Naam
-        <input id="tpl-name" class="input" value="${esc(editing.name)}" placeholder="Bijv. Bil 4" autocomplete="off">
+        <input id="tpl-name" class="input" value="${esc(editing.name)}" placeholder="Bijv. Billen & benen" autocomplete="off">
       </label>
-      <p class="label">Oefeningen</p>
+      <p class="label">1. Jouw oefeningen <span class="muted small">— volgorde met ↑ ↓</span></p>
       <div id="tpl-items" class="list"></div>
-      <p class="label">Oefening toevoegen</p>
-      <input id="tpl-search" class="input" type="search" placeholder="Zoek of typ een nieuwe oefening" autocomplete="off" enterkeyhint="done">
+      <p class="label">2. Oefening toevoegen</p>
+      <input id="tpl-search" class="input" type="search" placeholder="Zoek op naam of spiergroep (bv. bil, triceps)…" autocomplete="off" enterkeyhint="done">
       <div id="tpl-pick" class="pick-list"></div>
       <div class="sheet-actions">
         ${t ? `<button class="btn ghost danger" data-action="tpl-delete">Verwijder</button>` : ''}
@@ -1141,9 +1287,13 @@ function renderTplItems() {
       <div class="tpl-item-head">
         <span class="badge on">${i + 1}</span>
         ${thumb(it.exerciseId, { animate: false })}
-        <strong class="grow">${esc(exName(it.exerciseId))}</strong>
-        ${i > 0 ? `<button class="icon-btn" data-action="tpl-up" aria-label="Omhoog">↑</button>` : ''}
-        <button class="icon-btn" data-action="tpl-remove" aria-label="Verwijder">✕</button>
+        <span class="grow"><strong class="pick-name">${esc(exName(it.exerciseId))}</strong>
+          ${exById(it.exerciseId)?.muscle ? `<span class="muscle-pill">${esc(exById(it.exerciseId).muscle)}</span>` : ''}</span>
+      </div>
+      <div class="tpl-item-order">
+        <button class="icon-btn" data-action="tpl-up" aria-label="Omhoog" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button class="icon-btn" data-action="tpl-down" aria-label="Omlaag" ${i === editing.items.length - 1 ? 'disabled' : ''}>↓</button>
+        <button class="icon-btn danger-icon" data-action="tpl-remove" aria-label="Verwijder">🗑</button>
       </div>
       <div class="tpl-item-controls">
         <div class="stepper">
@@ -1160,11 +1310,14 @@ function renderTplPick() {
   const ql = q.toLowerCase();
   const pool = exercisesFor('gym');
   const used = new Set(editing.items.map((i) => i.exerciseId));
-  const list = pool.filter((e) => !used.has(e.id) && e.name.toLowerCase().includes(ql)).sort(byName);
+  const list = pool.filter((e) => !used.has(e.id)
+    && (e.name.toLowerCase().includes(ql) || (e.muscle || '').toLowerCase().includes(ql))).sort(byName);
   const exact = pool.some((e) => e.name.toLowerCase() === ql);
   $('#tpl-pick').innerHTML =
     (q && !exact ? `<button class="pick new" data-action="tpl-create">+ Nieuwe oefening “${esc(q)}”</button>` : '') +
-    list.map((e) => `<button class="pick" data-action="tpl-add" data-id="${esc(e.id)}">${thumb(e.id, { animate: false })}<span class="grow">${esc(e.name)}</span><span class="badge">+</span></button>`).join('');
+    list.map((e) => `<button class="pick" data-action="tpl-add" data-id="${esc(e.id)}">${thumb(e.id, { animate: false })}
+      <span class="grow"><span class="pick-name">${esc(e.name)}</span>${e.muscle ? `<span class="muscle-pill">${esc(e.muscle)}</span>` : ''}</span>
+      <span class="badge add">+</span></button>`).join('');
 }
 
 /* ---------- Sessies starten / afronden ---------- */
@@ -1186,15 +1339,101 @@ async function startSession({ program, name, templateId = null, items = [], rest
   go('workout');
 }
 
-function startPilates(levelId) {
+const pilatesWork = () => db.settings.pilatesWork || 40;
+const PREP_SEC = 10;
+
+/** Start een pilatesniveau als volledig-scherm speler die automatisch doorschakelt. */
+async function startPilates(levelId) {
   const l = PILATES_LEVELS.find((x) => x.id === levelId);
-  startSession({
-    program: 'pilates', name: `Pilatesbord · ${l.name}`, templateId: l.id, restSec: l.rest,
-    items: l.items.map((it) => ({
-      exerciseId: it.exerciseId, sets: it.sets, sec: it.sec ?? null,
-      target: it.sec ? `${it.sec} sec` : `${it.reps}${it.perSide ? ' per kant' : ''}`,
-    })),
-  });
+  if (!l || !(await confirmReplaceActive())) return;
+  enterFullscreen(); // zo vroeg mogelijk: moet binnen de tik van de gebruiker
+  const exercises = l.items.map((it) => newEntry(it.exerciseId, {
+    sets: it.sets, sec: it.sec ?? null,
+    target: it.sec ? `${it.sec} sec` : `${it.reps}${it.perSide ? ' per kant' : ''}`,
+  }));
+  // tijdlijn: klaarmaken → (set → rust) … → laatste set
+  const segs = [{ type: 'prep', sec: PREP_SEC }];
+  exercises.forEach((e, ei) => e.sets.forEach((_, si) => {
+    segs.push({ type: 'work', e: ei, s: si, sec: e.kind === 'time' ? (e.targetSec || 30) : pilatesWork() });
+    const last = ei === exercises.length - 1 && si === e.sets.length - 1;
+    if (!last) segs.push({ type: 'rest', e: ei, s: si, sec: l.rest });
+  }));
+  const now = Date.now();
+  db.active = {
+    id: uid(), program: 'pilates', templateId: l.id, name: `Pilatesbord · ${l.name}`,
+    startedAt: new Date(now).toISOString(), finishedAt: null, hr: null, restSec: l.rest, exercises,
+    run: { segs, i: 0, segStart: now, endAt: now + PREP_SEC * 1000, paused: false, pausedLeft: null },
+  };
+  stopTimer();
+  saveNow();
+  cue(segs[0]);
+  go('workout');
+}
+
+/** Een work-segment dat voorbij is telt als afgeronde set (voor "vorige keer" en geschiedenis). */
+function completeSeg(a, seg) {
+  if (a.program !== 'pilates' || seg?.type !== 'work') return;
+  const entry = a.exercises[seg.e];
+  const set = entry?.sets[seg.s];
+  if (!set) return;
+  set.done = true;
+  if (entry.kind === 'time') set.sec = seg.sec;
+  else set.reps = set.reps ?? firstNum(entry.target);
+}
+
+function enterFullscreen() {
+  try {
+    const el = document.documentElement;
+    if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+  } catch (_) { /* niet ondersteund (bv. iPhone-browser) — de speler vult dan gewoon het scherm */ }
+}
+function exitFullscreen() {
+  try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (_) { /* ignore */ }
+}
+
+function renderPlayer() {
+  const a = db.active;
+  const r = a.run;
+  const finished = r.i >= r.segs.length;
+  const seg = r.segs[r.i];
+  const works = r.segs.filter((s) => s.type === 'work');
+  const doneWork = a.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
+  const pct = Math.round((Math.min(r.i, r.segs.length) / r.segs.length) * 100);
+  const shown = finished ? null : seg.type === 'work' ? seg : r.segs.slice(r.i + 1).find((s) => s.type === 'work');
+  const entry = shown ? a.exercises[shown.e] : null;
+  const ex = entry ? exById(entry.exerciseId) : null;
+  const phase = finished ? '' : seg.type === 'work' ? 'Oefenen' : seg.type === 'rest' ? 'Rust — hierna' : 'Maak je klaar — eerst';
+  return `
+    <div class="player phase-${finished ? 'done' : seg.type} ${r.paused ? 'paused' : ''}" role="region" aria-label="Pilates-speler">
+      <div class="player-top">
+        <button class="icon-btn" data-action="run-stop" aria-label="Training stoppen">✕</button>
+        <div class="grow center"><strong>${esc(a.name)}</strong><br><span class="small muted">${doneWork}/${works.length} sets klaar</span></div>
+        <button class="icon-btn" data-action="player-fullscreen" aria-label="Volledig scherm">⛶</button>
+      </div>
+      <div class="player-progress"><div style="width:${pct}%"></div></div>
+      ${finished ? `
+        <div class="player-done">
+          <p class="player-phase">Klaar! 🎉</p>
+          <p class="player-name">Super gedaan</p>
+          <p class="muted">${doneWork} sets in ${fmtClock((Date.now() - new Date(a.startedAt)) / 1000)}</p>
+          <button class="btn primary block big" data-action="run-finish">Opslaan</button>
+          <button class="btn ghost block" data-action="run-prev">⏮ Terug naar laatste oefening</button>
+        </div>` : `
+        <p class="player-phase">${phase}</p>
+        <button class="player-fig" data-action="ex-info" data-id="${esc(entry.exerciseId)}" aria-label="Uitleg ${esc(entry.name)}">${thumb(entry.exerciseId)}</button>
+        <p class="player-name">${esc(entry.name)}</p>
+        <p class="player-meta">Set ${shown.s + 1}/${entry.sets.length} · 🎯 ${esc(entry.target)}</p>
+        ${ex?.muscle ? `<p class="center"><span class="muscle-pill">💪 ${esc(ex.muscle)}</span></p>` : ''}
+        <p class="player-time" id="run-time">–:–</p>
+        <div class="run-progress"><div id="run-bar"></div></div>
+        <p class="center small muted">${r.paused ? '⏸ Gepauzeerd' : seg.type === 'work' ? 'Schakelt vanzelf door' : ''}</p>
+        <div class="player-controls">
+          <button class="pbtn" data-action="run-prev" aria-label="Vorige">⏮</button>
+          <button class="pbtn main" data-action="run-pause" aria-label="${r.paused ? 'Hervatten' : 'Pauzeren'}">${r.paused ? '▶' : '⏸'}</button>
+          <button class="pbtn" data-action="run-skip" aria-label="Volgende">⏭</button>
+        </div>
+        ${ex?.steps ? `<details class="player-steps"><summary>Stap-voor-stap uitleg</summary><ol class="steps">${ex.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol></details>` : ''}`}
+    </div>`;
 }
 
 async function finishWorkout() {
@@ -1220,6 +1459,7 @@ async function finishWorkout() {
 }
 
 function endSession() {
+  exitFullscreen();
   db.active = null;
   saveNow();
   stopTimer();
@@ -1279,13 +1519,15 @@ function setSegment(r, i, start) {
   r.endAt = seg && seg.sec != null ? start + seg.sec * 1000 : null;
 }
 
+/** Getimede sessies (hardlopen én pilates-speler) delen deze motor. Haalt gemiste segmenten in. */
 function tickRun() {
   const a = db.active;
-  if (!a || a.program !== 'run') return;
+  if (!a || !a.run) return;
   const r = a.run;
   if (r.paused || r.i >= r.segs.length) return;
   let changed = false;
   while (r.endAt && Date.now() >= r.endAt) {
+    completeSeg(a, r.segs[r.i]);
     setSegment(r, r.i + 1, r.endAt);
     changed = true;
   }
@@ -1300,9 +1542,22 @@ function afterSegmentChange() {
   if (r.i >= r.segs.length) finishRun();
 }
 
+function cueText(seg) {
+  const a = db.active;
+  if (!seg) return 'Klaar! Goed gedaan!';
+  if (a?.program === 'pilates') {
+    const nextWork = seg.type === 'work' ? seg : a.run.segs.slice(a.run.i + 1).find((s) => s.type === 'work');
+    const e = nextWork ? a.exercises[nextWork.e] : null;
+    if (seg.type === 'work') return `${e.name}. Set ${seg.s + 1} van ${e.sets.length}.`;
+    if (seg.type === 'rest') return `Rust. Hierna: ${e?.name ?? ''}.`;
+    return `Maak je klaar. Eerste oefening: ${e?.name ?? ''}.`;
+  }
+  return seg.type === 'run' ? 'Hardlopen!' : seg.type === 'walk' ? 'Wandelen' : seg.type === 'cooldown' ? 'Cooling-down. Rustig uitwandelen.' : 'Warming-up. Rustig wandelen.';
+}
+
 function cue(seg) {
   alarm();
-  const text = seg ? (seg.type === 'run' ? 'Hardlopen!' : seg.type === 'walk' ? 'Wandelen' : seg.type === 'cooldown' ? 'Cooling-down. Rustig uitwandelen.' : 'Warming-up. Rustig wandelen.') : 'Klaar! Goed gedaan!';
+  const text = cueText(seg);
   try {
     if ('speechSynthesis' in window) {
       const u = new SpeechSynthesisUtterance(text);
@@ -1313,9 +1568,24 @@ function cue(seg) {
   } catch (_) { /* geen spraak */ }
 }
 
+/** Afronden van een getimede sessie (hardlopen of pilates-speler). */
 async function finishRun() {
-  if (confirmEl.open || !db.active || db.active.program !== 'run') return;
+  if (confirmEl.open || !db.active?.run) return;
   const a = db.active;
+  if (a.program === 'pilates') {
+    const done = a.exercises.map((e) => ({ ...e, sets: e.sets.filter((s) => s.done) })).filter((e) => e.sets.length);
+    if (!done.length) {
+      if (await confirmDialog('Er is nog geen set afgerond. Training weggooien?', 'Weggooien', true)) endSession();
+      return;
+    }
+    const res = await hrDialog(`${a.name} opslaan? (${plural(done.reduce((n, e) => n + e.sets.length, 0), 'set', 'sets')}) 🎉`, 'Opslaan');
+    if (!res || !db.active) return;
+    const { run, ...rest } = a;
+    db.history.unshift({ ...rest, exercises: done, hr: res.hr, finishedAt: new Date().toISOString() });
+    endSession();
+    toast('Pilates opgeslagen. Lekker bezig! 🧘‍♀️💗');
+    return;
+  }
   const res = await hrDialog(`${a.name} opslaan als gedaan? 🎉`, 'Opslaan');
   if (!res || !db.active) return;
   const { run, ...rest } = a;
@@ -1443,8 +1713,8 @@ function exportBackup() {
   flushSave();
   db.lastBackupAt = new Date().toISOString();
   saveNow();
-  const payload = { app: 'workout-tracker', exportedAt: db.lastBackupAt, ...db };
-  downloadFile(`workout-backup-${db.lastBackupAt.slice(0, 10)}.json`, JSON.stringify(payload, null, 2), 'application/json');
+  const payload = { app: 'workout-tracker', person: personId, exportedAt: db.lastBackupAt, ...db };
+  downloadFile(`workout-backup-${personId}-${db.lastBackupAt.slice(0, 10)}.json`, JSON.stringify(payload, null, 2), 'application/json');
   render();
   toast('Backup opgeslagen ✓');
 }
@@ -1455,12 +1725,16 @@ importInput.addEventListener('change', async () => {
   importInput.value = '';
   if (!file) return;
   try {
-    const next = normalizeDb(JSON.parse(await file.text()));
+    const raw = JSON.parse(await file.text());
+    const next = normalizeDb(raw);
+    const me = personById(personId);
+    const from = personById(raw.person);
+    const warn = from && from.id !== personId ? ` ⚠️ Let op: deze backup is van ${from.name}!` : '';
     const ok = await confirmDialog(
-      `Backup laden met ${plural(next.history.length, 'training', 'trainingen')}? Je huidige data op dit toestel wordt vervangen.`,
+      `Backup laden in het profiel van ${me.name} met ${plural(next.history.length, 'training', 'trainingen')}? De huidige gegevens van ${me.name} worden vervangen.${warn}`,
       'Importeren', true);
     if (!ok) return;
-    try { localStorage.setItem(`${STORAGE_KEY}:before-import`, JSON.stringify(db)); } catch (_) { /* vol */ }
+    try { localStorage.setItem(`${dataKey(personId)}:before-import`, JSON.stringify(db)); } catch (_) { /* vol */ }
     db = next;
     saveNow();
     go(db.active ? 'workout' : 'home');
@@ -1666,6 +1940,7 @@ async function handleAction(action, btn) {
       const ex = exById(btn.dataset.id);
       if (target && ex) { target.exerciseId = ex.id; target.name = ex.name; saveNow(); }
       closeSheet(); render();
+      if (ex) toast(`Gewisseld${ex.muscle ? ` · traint nu: ${ex.muscle}` : ''}`);
       break;
     }
     case 'ex-info': openExerciseInfo(btn.dataset.id); break;
@@ -1700,16 +1975,41 @@ async function handleAction(action, btn) {
     }
     case 'run-skip': {
       const r = db.active.run;
+      if (r.i >= r.segs.length) break;
+      completeSeg(db.active, r.segs[r.i]); // handmatig vooruit = set gedaan
       setSegment(r, r.i + 1, Date.now());
       afterSegmentChange();
       break;
     }
+    case 'run-prev': {
+      const r = db.active.run;
+      if (r.i <= 0) break;
+      setSegment(r, Math.min(r.i, r.segs.length) - 1, Date.now());
+      afterSegmentChange();
+      break;
+    }
     case 'run-finish': finishRun(); break;
+    case 'player-fullscreen':
+      if (document.fullscreenElement) exitFullscreen(); else enterFullscreen();
+      if (!document.documentElement.requestFullscreen) toast('Tip: zet de app op je beginscherm voor volledig scherm');
+      break;
+    case 'pilates-work':
+      db.settings.pilatesWork = Number(btn.dataset.sec);
+      saveNow(); render();
+      break;
+    case 'pick-person': selectPerson(btn.dataset.person); break;
+    case 'legacy-assign': {
+      const p = personById(btn.dataset.person);
+      if (!p || !(await confirmDialog(`De bestaande trainingen toewijzen aan ${p.name}?`, `Ja, van ${p.name}`))) break;
+      if (assignLegacy(p.id)) { selectPerson(p.id, { quiet: true }); toast(`Gegevens staan nu bij ${p.name} ✓`); }
+      break;
+    }
     case 'run-stop': {
+      const isPilates = db.active.program === 'pilates';
       const choice = await choiceDialog('Training stoppen?', [
         { value: 'cancel', label: 'Doorgaan' },
         { value: 'discard', label: 'Weggooien', cls: 'ghost danger' },
-        { value: 'save', label: 'Opslaan als gedaan', cls: 'primary' },
+        { value: 'save', label: isPilates ? 'Opslaan wat klaar is' : 'Opslaan als gedaan', cls: 'primary' },
       ]);
       if (choice === 'discard') endSession();
       if (choice === 'save') { db.active.run.i = db.active.run.segs.length; db.active.run.endAt = null; saveNow(); render(); finishRun(); }
@@ -1749,6 +2049,7 @@ async function handleAction(action, btn) {
     case 'tpl-add':
       editing.items.push({ exerciseId: btn.dataset.id, sets: DEFAULT_SETS, target: '10-12' });
       renderTplItems(); renderTplPick();
+      toast(`${exName(btn.dataset.id)} toegevoegd`);
       break;
     case 'tpl-create': {
       const ex = findOrCreateExercise(editing.q, 'gym');
@@ -1768,10 +2069,15 @@ async function handleAction(action, btn) {
       if (itemIdx > 0) [editing.items[itemIdx - 1], editing.items[itemIdx]] = [editing.items[itemIdx], editing.items[itemIdx - 1]];
       renderTplItems();
       break;
+    case 'tpl-down':
+      if (itemIdx >= 0 && itemIdx < editing.items.length - 1) [editing.items[itemIdx + 1], editing.items[itemIdx]] = [editing.items[itemIdx], editing.items[itemIdx + 1]];
+      renderTplItems();
+      break;
     case 'tpl-remove': editing.items.splice(itemIdx, 1); renderTplItems(); renderTplPick(); break;
     case 'tpl-save': {
       const name = $('#tpl-name').value.trim();
       if (!name) { toast('Geef het schema een naam'); $('#tpl-name').focus(); break; }
+      if (!editing.items.length) { toast('Voeg minstens één oefening toe'); break; }
       const data = { name, items: clone(editing.items) };
       if (editing.id) Object.assign(db.templates.find((t) => t.id === editing.id), data);
       else db.templates.push({ id: `tpl-${uid()}`, program: 'gym', note: '', ...data });
@@ -1845,8 +2151,17 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ---------- Init ---------- */
-render();
-if (db.active?.program === 'run') tickRun();
+// Beginpagina = profielkeuze. Uitzondering: loopt er nog een training van de laatste persoon,
+// dan gaan we daar direct naartoe (anders zou een lopende timer "verdwijnen" achter de keuze).
+(() => {
+  const last = localStorage.getItem(PERSON_KEY);
+  if (last && personById(last) && personSummary(last).active) {
+    selectPerson(last, { quiet: true });
+    tickRun();
+  } else {
+    render();
+  }
+})();
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW', err)));

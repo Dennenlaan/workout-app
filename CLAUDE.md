@@ -8,6 +8,12 @@ in de browser, geen backend, geen build-stap. UI-taal: **Nederlands**. Thema: **
 > ontwerpkeuze. Werk ook de "Changelog" onderaan bij.
 
 ## Productoverzicht
+**Beginpagina = profielkeuze** (`view: 'who'`): "Mama" 🌷 of "Senna" 🌸 (`PEOPLE` in app.js). Alle
+voortgang (history, gewichten, eigen schema's, actieve sessie, instellingen, hartslagprofiel) staat
+**per persoon apart**. Wisselen via de chip "⇄ wisselen" onder de begroeting. Bij een cold start
+verschijnt altijd de profielkeuze, behalve als de laatst gekozen persoon nog een lopende training
+heeft (dan direct daarheen, zodat een timer niet "verdwijnt").
+
 **Startscherm (bewust rustig)**: alleen begroeting, evt. "Ga verder", korte loop-herinnering en de
 3 grote keuzes. Geschiedenis + backup zitten achter het kleine 🗂-icoon rechtsboven (`view: 'log'`,
 met stip als backup > 14 dagen oud). **Hartslag staat níet op het startscherm/hoofdmenu** — alleen
@@ -19,11 +25,23 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
    haar **Action-pilatesbord**: langwerpig bord met **glijplaat/slede in het midden**, **handgrepen** aan
    de uiteinden en **koorden met handvatten**. Oefeningen: koord-oefeningen staand/zittend,
    slede-oefeningen (glij-lunge, knee tuck, pike, rollout, hamstring-glij, kickback) + matwerk.
-   Set-tracker (reps of tijd) + rusttimer.
+   **Een niveau kiezen opent de volledig-scherm speler** (`renderPlayer`): klaarmaken (10 s) →
+   per set een werk-interval → rust (`level.rest`) → … schakelt **automatisch** door, met spraak,
+   piepjes, pauze/hervat en ⏮/⏭ als back-up. Werktijd voor herhalingsoefeningen instelbaar
+   (30/40/50/60 s, `settings.pilatesWork`); tijd-oefeningen gebruiken hun eigen `sec`.
+   Probeert de Fullscreen API (Android); op iPhone vult de speler het scherm (`position: fixed`).
 3. **Basic-Fit** (`view: 'gym'`): Armen (zonder bankje, ⇄ alternatieven), Full Body, Bil 1/2/3
    (elk 7 oefeningen), kg + reps per set, sets bewerkbaar. **Bil-schema's per bilspier** met
    spier-badge (`template.focus`, groene markering via `gluteSVG()`):
    Bil 1 = gluteus **maximus**, Bil 2 = gluteus **medius** (zijkant), Bil 3 = gluteus **minimus** (diep).
+   **"✨ Mijn eigen schema's"**: apart kopje met groene "Maak je eigen schema"-kaart; editor met
+   zoeken op naam óf spiergroep, ↑/↓, 🗑, sets en doel. Eigen = id niet in `BUILTIN_TEMPLATE_IDS`.
+   **Spiergroep**: elke oefening heeft `muscle` (`GYM_MUSCLES` / `PILATES_MUSCLES` in data.js), getoond
+   als groen label in de oefeningkaart, keuzelijsten, editor, info en speler. Het ⇄-wisselscherm toont
+   "Nu: … 💪 spiergroep" en per alternatief de spiergroep + "✓ zelfde spiergroep" / "↺ andere focus".
+   Nieuwe oefeningen (v5): `bf-sl-kb-rdl` (single-leg kettlebell RDL, één hand), `bf-sl-leg-press`
+   (leg press met linkerbeen), `bf-seated-leg-curl` (zittend beenbuig-apparaat, hamstrings). Bereikbaar
+   via ⇄ (alt van single-leg RDL / leg press / leg curl) en via eigen schema's.
 4. **Hartslag** (`view: 'heart'`): uitleg (geen live smartwatch-data in een PWA), profiel, zones, HR per sessie.
 
 ## Illustraties (100% offline, nooit leeg)
@@ -58,7 +76,10 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
 
 ## Architectuur `app.js`
 - Globaal `db` (gebruikersdata) + UI-state (`view`, `editing`, `historyLimit`, `timer`).
-- `render()` kiest view: `home | run | pilates | gym | heart | log | workout`. Terugknop via
+- `render()` kiest view: `who | home | run | pilates | gym | heart | log | workout`. Bij `workout`
+  met `db.active.run`: hardlopen → `renderRunSession()`, pilates → `renderPlayer()`; anders set-tracker.
+- Profielen: globale `personId` + `db` (= data van die persoon). `selectPerson(pid)` laadt via
+  `load(pid)`; `saveNow()` schrijft naar `dataKey(personId)` en doet niets zolang er niemand gekozen is. Terugknop via
   `backHeader(title, sub, back)` (hartslag gaat terug naar `run`). Bij `view === 'workout'`
   en `db.active.program === 'run'` wordt de **run-sessie** getoond, anders de set-tracker.
 - Render = template strings → `innerHTML`. Typen in invoervelden re-rendert niet (focus behouden):
@@ -91,7 +112,19 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
   (HR-reserve), anders % van max. Zones in `HR_ZONES`.
 - Wake Lock aan tijdens elke actieve sessie.
 
-## Datastructuur (`localStorage['workout-tracker:v1']`, `schemaVersion: 3`)
+## Opslagsleutels (localStorage)
+| Sleutel | Inhoud |
+|---|---|
+| `workout-tracker:v1:mama`, `workout-tracker:v1:senna` | Volledige `db` per persoon (vorm hieronder). |
+| `workout-tracker:person` | Laatst gekozen persoon-id. |
+| `workout-tracker:timer` | Lopende rusttimer (gedeeld, wordt gestopt bij profielwissel). |
+| `workout-tracker:v1` | **Legacy** (vóór profielen). Bij data erin vraagt de profielkeuze eenmalig "Van wie zijn die?" en verplaatst het (`assignLegacy`); lege legacy wordt opgeruimd. Kopie blijft in `workout-tracker:v1:legacy-backup`. |
+| `…:<id>:before-import`, `…:<id>:corrupt-<ts>` | Veiligheidskopieën per persoon. |
+
+Backup-export = data van de huidige persoon (`workout-backup-<persoon>-<datum>.json`, met veld
+`person`); import gaat in de huidige persoon en waarschuwt als de backup van de ander is.
+
+## Datastructuur per persoon (`schemaVersion: 3`)
 ```jsonc
 {
   "schemaVersion": 2,
@@ -111,8 +144,11 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
                        "target": "10-12", "targetSec": null, "alts": ["…"] | null,
                        "sets": [ { "kg": 12.5, "reps": 10, "sec": null, "done": true } ] } ] }
   ],
-  "active": null,   // lopende sessie (zelfde vorm, finishedAt null); bij run extra "run": {segs,i,endAt,segStart,paused,pausedLeft}
-  "settings": { "restSeconds": 90 },
+  "active": null,   // lopende sessie (zelfde vorm, finishedAt null). Getimede sessies hebben extra
+                    // "run": {segs,i,endAt,segStart,paused,pausedLeft}. Hardlopen: segs {type:'warmup'|'run'|'walk'|'cooldown', sec}.
+                    // Pilates-speler: segs {type:'prep'|'work'|'rest', e (oefening-index), s (set-index), sec};
+                    // een voorbij (of overgeslagen ⏭) work-segment zet die set op done (completeSeg).
+  "settings": { "restSeconds": 90, "pilatesWork": 40 },
   "run": { "reminder": { "days": [0, 2, 5], "time": "19:00", "notify": false, "lastNotified": "YYYY-MM-DD" | null } }, // days: 0 = maandag
   "profile": { "age": null, "restHr": null, "maxHr": null },
   "lastBackupAt": null
@@ -173,6 +209,11 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v5 (2026-11-23)**: profielkeuze Mama/Senna als beginpagina met gescheiden opslag per persoon
+  (+ eenmalige toewijzing van oude gegevens); pilates als volledig-scherm speler die automatisch
+  doorschakelt (pauze, ⏮/⏭, instelbare tijd per set); Basic-Fit "Mijn eigen schema's" + verbeterde
+  editor (↑↓, zoeken op spiergroep); groene spiergroep-labels overal en in het ⇄-wisselscherm;
+  nieuwe oefeningen single-leg kettlebell RDL, single-leg press (linkerbeen), zittende leg curl. Cache v5.
 - **v4 (2026-11-23)**: klaar voor GitHub Pages: `.nojekyll`, cache-prefix `workout-tracker-` (ruimt
   geen caches van andere github.io-sites meer op), submap- en offline-werking geverifieerd.
 - **v3 (2026-11-23)**: licht wit-roze thema (dark mode verwijderd); rustig startscherm (alleen 3
