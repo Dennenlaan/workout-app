@@ -288,7 +288,17 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
   `GCM_INTERACTIVE=never`); verloopt de login, laat de gebruiker in een gewoon PowerShell-venster
   `…\git\ucrt64\bin\git-credential-manager.exe github login` draaien. Alternatief: *Push origin* in GitHub Desktop.
 - **Release-checklist**: (1) wijzig code, (2) verhoog `CACHE` in `sw.js` en `APP_VERSION` in app.js,
-  (3) commit + push, (4) wacht tot `sw.js` live de nieuwe versie toont (GitHub Pages ± 1 min).
+  (3) **opstart-rooktest** (verplicht, zie hieronder), (4) commit + push, (5) wacht tot `sw.js` live de nieuwe
+  versie toont (GitHub Pages ± 1 min).
+- **Opstart-rooktest** (les uit v12 → wit scherm): herlaad de app écht (`location.reload()`) met een
+  openstaande training van elk type (gym, pilates-speler, run, dumbbell, kettlebell) en controleer dat `#app`
+  gevuld is zonder console-errors; open daarna elk view voor beide profielen (incl. de 3 progress-tabs).
+  Testen zonder reload missen fouten in de laadvolgorde van scripts.
+- **Wit scherm voorkomen**: `boot()` start pas na `DOMContentLoaded` (alle scripts geladen; progress.js komt
+  ná app.js). `render()` is een vangnet rond `renderUnsafe()`: bij een fout verschijnt `showRecovery()` met
+  "Opnieuw proberen / Naar startscherm / Lopende training sluiten (geparkeerd in `…:<id>:parked-<ts>`) /
+  Profielkeuze" + de foutmelding (om door te sturen). Functies uit progress.js in app.js altijd met
+  `typeof fn === 'function'` aanroepen.
 - **Waarom updates soms niet zichtbaar waren (opgelost in v11)**: GitHub Pages stuurt
   `Cache-Control: max-age=600` en de oude SW was stale-while-revalidate → eerst oude versie, soms
   meerdere keren openen nodig. Nu: network-first, `register(…, { updateViaCache: 'none' })`, update-check
@@ -313,6 +323,9 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v13 (2026-11-23)**: fix wit scherm bij openen met een openstaande training (v12: `timesDone` uit
+  progress.js werd aangeroepen vóór dat bestand geladen was). Start nu na DOMContentLoaded, herstelscherm
+  i.p.v. wit scherm bij elke render-fout, opstart-rooktest toegevoegd aan de release-checklist.
 - **v12 (2026-11-23)**: pilates op tijd (10/15/20/30/eigen → automatisch passend schema); startscherm-kaarten
   "➕ Apparaat of oefening toevoegen" (zelf toevoegen of via foto) en "📈 Voortgang"; voortgang met grafiek
   per oefening (L/R apart), lichaamsgewicht met weekgemiddelden en cm-metingen met SVG-lichaamsomtrek;

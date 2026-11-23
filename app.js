@@ -6,7 +6,7 @@
    ========================================================= */
 
 /* ---------- Constants ---------- */
-const APP_VERSION = 'v12';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
+const APP_VERSION = 'v13';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
 const STORAGE_KEY = 'workout-tracker:v1';          // legacy (vóór profielen) + prefix
 const TIMER_KEY = 'workout-tracker:timer';
 const PERSON_KEY = 'workout-tracker:person';       // laatst gekozen persoon
@@ -466,7 +466,36 @@ function zoneOf(bpm) {
 const app = $('#app');
 const timerEl = $('#timer');
 
+/**
+ * Vangnet: gaat er iets mis bij het tekenen, dan nooit een wit scherm maar een herstelscherm.
+ * De openstaande training wordt daarbij NIET weggegooid (alleen geparkeerd als de gebruiker dat kiest).
+ */
 function render() {
+  try {
+    renderUnsafe();
+  } catch (err) {
+    console.error('Render-fout', err);
+    showRecovery(err);
+  }
+}
+
+function showRecovery(err) {
+  try { timerEl.hidden = true; document.body.classList.remove('player-open', 'has-timer'); } catch (_) { /* ignore */ }
+  app.innerHTML = `
+    <section class="card recovery">
+      <h1>Oeps 😅</h1>
+      <p>Er ging iets mis bij het openen van dit scherm. Je gegevens zijn veilig.</p>
+      <div class="list">
+        <button class="btn primary block" data-action="recover-retry">🔄 Opnieuw proberen</button>
+        <button class="btn block" data-action="recover-home">🏠 Naar het startscherm</button>
+        ${db?.active ? '<button class="btn block" data-action="recover-park">⏸ Lopende training sluiten (wordt bewaard)</button>' : ''}
+        <button class="btn ghost block" data-action="recover-who">👥 Naar profielkeuze</button>
+      </div>
+      <p class="muted tiny">Foutmelding (handig om door te sturen): ${esc(String(err?.message || err))} · app ${APP_VERSION}</p>
+    </section>`;
+}
+
+function renderUnsafe() {
   if (!personId) view = 'who';
   if (view === 'workout' && !db.active) view = 'home';
   const timed = view === 'workout' && !!db.active?.run;          // run-sessie of pilates-speler
@@ -1102,7 +1131,7 @@ function renderEntry(entry) {
           ${entry.target ? `<p class="target">🎯 ${setsPerSide(entry)} × ${esc(entry.target)}</p>` : ''}
           <div class="ex-actions">
             <button class="chip small-chip" data-action="ex-info" data-id="${esc(entry.exerciseId)}">ⓘ Uitleg</button>
-            ${timesDone(entry.exerciseId) >= 2 ? `<button class="chip small-chip" data-action="progress-ex" data-id="${esc(entry.exerciseId)}">📈 Voortgang</button>` : ''}
+            ${typeof timesDone === 'function' && timesDone(entry.exerciseId) >= 2 ? `<button class="chip small-chip" data-action="progress-ex" data-id="${esc(entry.exerciseId)}">📈 Voortgang</button>` : ''}
             ${swapOptions(entry).all.length ? `<button class="chip small-chip" data-action="swap">⇄ Wissel</button>` : ''}
           </div>
         </div>
@@ -1426,7 +1455,7 @@ function openExerciseInfo(id) {
       ${ex.uni ? `<p class="muted small center">↔ Eenzijdig: per set eerst ${sideLabel('L', ex.uni)}, dan ${sideLabel('R', ex.uni)}</p>` : ''}
       ${EQUIPMENT_OF[id] ? `<p class="muted small center">📍 ${esc(EQUIPMENT_OF[id].toestel)} · ${esc(EQUIPMENT_OF[id].zone)}</p>`
         : ex.toestel ? `<p class="muted small center">📍 ${esc(ex.toestel)} · zelf toegevoegd</p>` : ''}
-      ${timesDone(id) >= 2 ? `<button class="btn ghost block" data-action="progress-ex" data-id="${esc(id)}">📈 Bekijk je voortgang</button>` : ''}
+      ${typeof timesDone === 'function' && timesDone(id) >= 2 ? `<button class="btn ghost block" data-action="progress-ex" data-id="${esc(id)}">📈 Bekijk je voortgang</button>` : ''}
       ${ex.equipment ? `<p class="muted small center">🧰 ${esc(ex.equipment)}</p>` : ''}
       ${ex.steps ? `<ol class="steps">${ex.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
       ${ex.tip ? `<p class="tip big-tip">💡 ${esc(ex.tip)}</p>` : ''}
@@ -2714,6 +2743,17 @@ async function handleAction(action, btn) {
 
     case 'check-update': checkForUpdate({ manual: true }); break;
 
+    /* Herstelscherm (zie showRecovery) */
+    case 'recover-retry': location.reload(); break;
+    case 'recover-home': view = 'home'; render(); break;
+    case 'recover-who': view = 'who'; render(); break;
+    case 'recover-park':
+      // training niet weggooien: bewaren onder een aparte sleutel en de sessie sluiten
+      try { localStorage.setItem(`${dataKey(personId)}:parked-${Date.now()}`, JSON.stringify(db.active)); } catch (_) { /* vol */ }
+      db.active = null; saveNow(); stopTimer(); view = 'home'; render();
+      toast('Training gesloten en bewaard');
+      break;
+
     /* Feedback */
     case 'feedback': openFeedback({ type: btn.dataset.type, subject: btn.dataset.subject || '' }); break;
     case 'fb-type': feedback.type = btn.dataset.type; renderFeedbackSheet(); break;
@@ -2806,7 +2846,9 @@ document.addEventListener('keydown', (e) => {
 /* ---------- Init ---------- */
 // Beginpagina = profielkeuze. Uitzondering: loopt er nog een training van de laatste persoon,
 // dan gaan we daar direct naartoe (anders zou een lopende timer "verdwijnen" achter de keuze).
-(() => {
+// BELANGRIJK: pas starten als ÁLLE scripts geladen zijn (progress.js komt na app.js). In v12 werd een
+// openstaande training al getekend vóór progress.js er was → ReferenceError → wit scherm.
+function boot() {
   const last = localStorage.getItem(PERSON_KEY);
   if (last && personById(last) && personSummary(last).active) {
     selectPerson(last, { quiet: true });
@@ -2814,7 +2856,9 @@ document.addEventListener('keydown', (e) => {
   } else {
     render();
   }
-})();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
 
 /* ---------- Updates ----------
    - sw.js zonder HTTP-cache controleren (updateViaCache: 'none');
