@@ -337,6 +337,11 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v16 (2026-11-24)**: zoeken op losse woorden in naam, andere namen (`aka`), spiergroep en toestel
+  (`exMatches` in app.js, gebruikt in "+ Oefening toevoegen" en de schema-editor); zelf toevoegen waarschuwt als de
+  oefening er al onder een andere naam in staat (`sameExercise`). Hernoemd: "Standing glute kickback machine"
+  (`bf-glute-kickback-machine`) en "Assisted pull-up glute pushdown (1 voet op kniepad)" (`bf-assist-glute`).
+  Catalogus-oefeningen mogen een `aka`-veld hebben (zoekwoorden/alternatieve namen). Cache v16.
 - **v15 (2026-11-24)**: "Planken voor beginners" onder Thuis trainen: 5 stappen (knieplank → 1 minuut plank),
   6 plank-oefeningen met SVG, spiergroep en tip (ook in de speler), zijplanken links/rechts, zelfde
   volledig-scherm speler; voortgang per stap per profiel. Rest van de wensenlijst stond al in v14

@@ -6,7 +6,7 @@
    ========================================================= */
 
 /* ---------- Constants ---------- */
-const APP_VERSION = 'v15';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
+const APP_VERSION = 'v16';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
 const STORAGE_KEY = 'workout-tracker:v1';          // legacy (vóór profielen) + prefix
 const TIMER_KEY = 'workout-tracker:timer';
 const PERSON_KEY = 'workout-tracker:person';       // laatst gekozen persoon
@@ -337,6 +337,16 @@ function exById(id, source) {
 }
 const exName = (id) => exById(id)?.name ?? 'Onbekende oefening';
 const exercisesFor = (program) => [...CATALOG, ...db.exercises].filter((e) => e.program === program);
+/** Zoeken: elk woord moet ergens voorkomen in naam, andere namen (`aka`), spiergroep of toestel (volgorde maakt niet uit). */
+const searchText = (e) => `${e.name} ${e.aka || ''} ${e.muscle || ''} ${e.toestel || ''}`.toLowerCase().replace(/[–-]/g, ' ');
+const exMatches = (e, q) => q.toLowerCase().replace(/[–-]/g, ' ').split(/\s+/).filter(Boolean).every((w) => searchText(e).includes(w));
+/** Bestaat deze naam al? Exact dezelfde naam, of (bij 3+ woorden) alle woorden in naam/`aka` van een bestaande oefening. */
+const sameExercise = (program, name) => {
+  const n = name.toLowerCase().trim();
+  const words = n.replace(/[–-]/g, ' ').split(/\s+/).filter(Boolean);
+  return exercisesFor(program).find((e) => e.name.toLowerCase() === n
+    || (words.length >= 3 && words.every((w) => `${e.name} ${e.aka || ''}`.toLowerCase().replace(/[–-]/g, ' ').includes(w))));
+};
 
 /* ---------- State ---------- */
 let personId = null;  // wie traint er nu (Mama / Senna)
@@ -1673,7 +1683,8 @@ function saveOwnExercise() {
   captureOwnDraft();
   const name = (ownDraft.name || '').trim().replace(/\s+/g, ' ');
   if (!name) { toast('Geef de oefening een naam'); $('#own-name')?.focus(); return; }
-  if (exercisesFor(ownDraft.program).some((e) => e.name.toLowerCase() === name.toLowerCase())) { toast('Die bestaat al — zoek hem op bij "Oefening toevoegen"'); return; }
+  const dup = sameExercise(ownDraft.program, name);
+  if (dup) { toast(`Die staat er al in als "${dup.name}" — zoek hem op bij "Oefening toevoegen"`); return; }
   const ex = { id: `ex-${uid()}`, name, kind: ownDraft.kind, program: ownDraft.program, muscle: ownDraft.muscle };
   if (ownDraft.uni) ex.uni = 'been';
   if (ownDraft.program === 'gym' && ownDraft.toestel?.trim()) ex.toestel = ownDraft.toestel.trim();
@@ -1791,7 +1802,7 @@ function renderPickResults(q) {
   const ql = query.toLowerCase();
   const pool = exercisesFor(program);
   const inWorkout = new Set(db.active?.exercises.map((e) => e.exerciseId));
-  const list = pool.filter((e) => e.name.toLowerCase().includes(ql)).sort(byName);
+  const list = pool.filter((e) => exMatches(e, ql)).sort(byName);
   const exact = pool.some((e) => e.name.toLowerCase() === ql);
   $('#ex-results').innerHTML =
     (query && !exact ? `<button class="pick new" data-action="create-and-add">+ Nieuwe oefening “${esc(query)}”</button>` : '') +
@@ -1937,8 +1948,7 @@ function renderTplPick() {
   const ql = q.toLowerCase();
   const pool = exercisesFor('gym');
   const used = new Set(editing.items.map((i) => i.exerciseId));
-  const list = pool.filter((e) => !used.has(e.id)
-    && (e.name.toLowerCase().includes(ql) || (e.muscle || '').toLowerCase().includes(ql))).sort(byName);
+  const list = pool.filter((e) => !used.has(e.id) && exMatches(e, ql)).sort(byName);
   const exact = pool.some((e) => e.name.toLowerCase() === ql);
   $('#tpl-pick').innerHTML =
     (q && !exact ? `<button class="pick new" data-action="tpl-create">+ Nieuwe oefening “${esc(q)}”</button>` : '') +
