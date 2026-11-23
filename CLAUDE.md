@@ -32,7 +32,12 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
 1. **Hardloopschema** (`view: 'run'`): 10 weken × 3 trainingen (start-to-run naar 5 km).
    Afvinkkalender (week × training), "volgende training", begeleide intervaltimer met
    geluid/spraak/trilling, 3×/week-herinnering (banner, browsermelding, agenda-.ics).
-2. **Thuis trainen** (`view: 'thuis'`) = keuzescherm met 4 opties (`THUIS_OPTIONS`):
+2. **Thuis trainen** (`view: 'thuis'`) = keuzescherm met 5 opties (`THUIS_OPTIONS`; de 5e = **Planken voor
+   beginners**, `view: 'plank'`, `renderPlank`: `PLAYER_PROGRAMS.plank` met `fixed: true` → géén
+   trainingsduur-keuze; 5 stappen `PLANK_LEVELS` (plank-1..5, van knieplank 20 s naar 1 min plank), 6 oefeningen
+   `PLANK_EXERCISES` (kind `time`, poses `pk-*` + `plank`, zijplanken `uni: 'kant'` → L/R; `tip` wordt ook in de
+   speler getoond). Sessie-`program` = `pilates`, `templateId` = stap-id → "✓ n× gedaan" en "volgende" (eerste stap
+   < 2× gedaan), per profiel):
    **Pilates met bord** (`pilates`), **Pilates op matje** (`mat`) — beide volledig-scherm speler via
    `PLAYER_PROGRAMS` (levels + exercises) — en **Thuis met dumbbell** / **Thuis met kettlebell**
    (`dumbbell` / `kettlebell`: vaste schema's `HOME_TEMPLATES`, set-tracker met kg + rusttimer,
@@ -174,7 +179,7 @@ nooit het gewicht van de andere kant tonen. `+ Set` voegt een L+R-paar toe. In d
 
 ## Architectuur `app.js`
 - Globaal `db` (gebruikersdata) + UI-state (`view`, `editing`, `historyLimit`, `timer`).
-- `render()` kiest view: `who | home | run | thuis | pilates | mat | dumbbell | kettlebell | gym | heart | log | workout`. Bij `workout`
+- `render()` kiest view: `who | home | run | thuis | pilates | mat | plank | dumbbell | kettlebell | gym | heart | log | progress | workout`. Bij `workout`
   met `db.active.run`: hardlopen → `renderRunSession()`, pilates → `renderPlayer()`; anders set-tracker.
 - Profielen: globale `personId` + `db` (= data van die persoon). `selectPerson(pid)` laadt via
   `load(pid)`; `saveNow()` schrijft naar `dataKey(personId)` en doet niets zolang er niemand gekozen is. Terugknop via
@@ -332,6 +337,10 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v15 (2026-11-24)**: "Planken voor beginners" onder Thuis trainen: 5 stappen (knieplank → 1 minuut plank),
+  6 plank-oefeningen met SVG, spiergroep en tip (ook in de speler), zijplanken links/rechts, zelfde
+  volledig-scherm speler; voortgang per stap per profiel. Rest van de wensenlijst stond al in v14
+  (opnieuw nagelopen). Opstart-rooktest alle sessietypes + alle views voor beide profielen. Cache v15.
 - **v14 (2026-11-23)**: profielen toevoegen/bewerken/verwijderen (naam, icoon, lengte, geslacht, vet%);
   vetpercentage per weging + BMI + vetvrije massa bij Voortgang; nieuwe oefening "Assisted pull-up machine –
   bil-kickback (1 voet op kniepad)" (L/R, bij toestel Assisted pull-up/dip en als ⇄ bij kickbacks). Wensenlijst

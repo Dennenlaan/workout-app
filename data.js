@@ -407,6 +407,22 @@ const POSES = {
   plank: { dur: 3.5, frames: [
     [139, 104, 126, 108, 90, 114, 126, 122, 142, 122, 65, 119, 40, 123],
     [139, 103, 126, 107, 90, 111, 126, 122, 142, 122, 65, 117, 40, 123]] },
+  // Plank voor beginners (zijaanzicht, hoofd rechts)
+  'pk-knee': { dur: 3.5, frames: [
+    fr({ h: [139, 104], n: [126, 108], p: [94, 114], e: [126, 122], w: [142, 122], k: [70, 121], f: [50, 106], e2: [123, 122], w2: [139, 122], k2: [67, 121], f2: [47, 106] }),
+    fr({ h: [139, 103], n: [126, 107], p: [94, 112], e: [126, 122], w: [142, 122], k: [70, 121], f: [50, 106], e2: [123, 122], w2: [139, 122], k2: [67, 121], f2: [47, 106] })] },
+  'pk-high': { dur: 3.5, frames: [
+    fr({ h: [142, 86], n: [130, 92], p: [90, 106], e: [130, 108], w: [130, 123], k: [64, 115], f: [40, 123] }),
+    fr({ h: [142, 85], n: [130, 91], p: [90, 104], e: [130, 108], w: [130, 123], k: [64, 114], f: [40, 123] })] },
+  'pk-tap': { dur: 1.6, frames: [
+    fr({ h: [142, 86], n: [130, 92], p: [90, 106], e: [130, 108], w: [130, 123], k: [64, 115], f: [40, 123] }),
+    fr({ h: [142, 86], n: [130, 92], p: [90, 106], e: [130, 108], w: [130, 123], e2: [138, 104], w2: [128, 94], k: [64, 115], f: [40, 123] })] },
+  'pk-side': { front: true, dur: 3.2, frames: [
+    fr({ h: [40, 90], n: [50, 100], p: [85, 108], e: [50, 121], w: [66, 122], e2: [64, 98], w2: [78, 104], k: [110, 114], f: [136, 120], k2: [110, 112], f2: [136, 117] }),
+    fr({ h: [40, 88], n: [50, 99], p: [85, 105], e: [50, 121], w: [66, 122], e2: [64, 97], w2: [78, 102], k: [110, 113], f: [136, 120], k2: [110, 111], f2: [136, 117] })] },
+  'pk-side-knee': { front: true, dur: 3.2, frames: [
+    fr({ h: [40, 92], n: [50, 101], p: [82, 111], e: [50, 121], w: [66, 122], e2: [64, 99], w2: [78, 105], k: [108, 121], f: [116, 112], k2: [108, 119], f2: [116, 109] }),
+    fr({ h: [40, 90], n: [50, 100], p: [82, 108], e: [50, 121], w: [66, 122], e2: [64, 98], w2: [78, 103], k: [108, 121], f: [116, 112], k2: [108, 119], f2: [116, 109] })] },
   'm-kickback': { dur: 2.4, frames: [fr(QUAD), fr({ ...QUAD, k: [64, 88], f: [40, 80] })] },
   'm-rollup': { dur: 3.6, frames: [
     fr({ h: [22, 114], n: [36, 118], p: [72, 120], e: [24, 116], w: [10, 114], k: [98, 120], f: [124, 121] }),
@@ -467,7 +483,7 @@ const UNI = {
   'pb-slide-lunge': 'been', 'pb-side-slide': 'been', 'pb-slide-kick': 'been', 'pb-birddog': 'kant',
   // Mat
   'pm-sl-bridge': 'been', 'pm-sidelift': 'been', 'pm-clamshell': 'been', 'pm-donkey': 'been', 'pm-hydrant': 'been',
-  'pm-kickback': 'been', 'pm-birddog': 'kant', 'pm-side-plank': 'kant',
+  'pm-kickback': 'been', 'pm-birddog': 'kant', 'pm-side-plank': 'kant', 'pk-side-knee': 'kant', 'pk-side': 'kant',
   // Basic-Fit
   'bf-bulgarian': 'been', 'bf-glute-kickback-machine': 'been', 'bf-cable-kickback': 'been', 'bf-diag-kickback': 'been',
   'bf-cable-abduction': 'been', 'bf-curtsy': 'been', 'bf-sl-rdl': 'been', 'bf-sl-kb-rdl': 'been', 'bf-lateral-stepup': 'been',
@@ -668,6 +684,52 @@ const MAT_LEVELS = [
     { exerciseId: 'pm-rollup', sets: 3, reps: 10 }, { exerciseId: 'pm-side-plank', sets: 3, reps: 10, perSide: true },
     { exerciseId: 'pm-hundred', sets: 3, sec: 60 }, { exerciseId: 'pm-plank', sets: 3, sec: 45 },
   ] },
+];
+
+/* ---------- Planken voor beginners (volledig-scherm speler, vaste opbouw in 5 stappen) ---------- */
+const PLANK_EXERCISES = [
+  { id: 'pk-knee', name: 'Plank op je knieën', pose: 'pk-knee', muscle: 'Buik (core)',
+    tip: 'Onderarmen onder je schouders, knieën op de mat; rechte lijn van hoofd tot knieën.', steps: [
+    'Onderarmen op de mat, ellebogen recht onder je schouders.', 'Knieën op de mat, voeten mogen omhoog.',
+    'Span je buik en billen aan: rechte lijn van hoofd tot knieën.', 'Kijk naar de mat en adem rustig door.'] },
+  { id: 'pk-forearm', name: 'Plank op onderarmen', pose: 'plank', muscle: 'Buik (core)',
+    tip: 'Rechte lijn van hoofd tot hielen; billen niet omhoog en heupen niet laten zakken.', steps: [
+    'Onderarmen op de mat, ellebogen onder je schouders.', 'Zet je tenen neer en til je knieën op.',
+    'Buik intrekken, billen aanspannen, rug recht.', 'Begint je onderrug te zakken? Zet je knieën neer en maak de tijd af.'] },
+  { id: 'pk-high', name: 'Hoge plank (gestrekte armen)', pose: 'pk-high', muscle: 'Buik (core) & schouders',
+    tip: 'Handen onder je schouders, armen gestrekt, duw de mat van je af.', steps: [
+    'Handen recht onder je schouders, vingers gespreid.', 'Benen gestrekt naar achteren, op je tenen.',
+    'Duw de mat van je af zodat je schouderbladen niet inzakken.', 'Buik aan, heupen op één lijn met je schouders.'] },
+  { id: 'pk-side-knee', name: 'Zijplank op je knie', pose: 'pk-side-knee', muscle: 'Zij-buik (schuine buikspieren)',
+    tip: 'Elleboog onder je schouder, onderste knie op de mat, duw je heup omhoog.', steps: [
+    'Lig op je zij, elleboog recht onder je schouder.', 'Knieën gebogen, onderste knie blijft op de mat.',
+    'Duw je heup omhoog tot je een rechte lijn hebt van hoofd tot knie.', 'Houd vast en adem rustig door; daarna de andere kant.'] },
+  { id: 'pk-side', name: 'Zijplank', pose: 'pk-side', muscle: 'Zij-buik (schuine buikspieren) & bil (medius)',
+    tip: 'Elleboog onder je schouder, benen gestrekt; heup hoog houden.', steps: [
+    'Lig op je zij, elleboog onder je schouder, benen gestrekt op elkaar.', 'Duw je heup omhoog: rechte lijn van hoofd tot voeten.',
+    'Bovenste hand op je heup of omhoog.', 'Zakt je heup? Zet je onderste knie neer.'] },
+  { id: 'pk-tap', name: 'Plank met schoudertikken', pose: 'pk-tap', muscle: 'Buik (core) & schouders',
+    tip: 'Hoge plank, voeten iets breder; tik om en om je andere schouder zonder met je heupen te draaien.', steps: [
+    'Start in een hoge plank, voeten heupbreed of breder.', 'Til één hand op en tik je andere schouder aan.',
+    'Hand terug en wissel; heupen blijven stil.', 'Te zwaar? Doe het op je knieën.'] },
+].map((e) => ({ kind: 'time', ...e, program: 'plank', equipment: 'Matje', uni: UNI[e.id] }));
+
+const PLANK_LEVELS = [
+  { id: 'plank-1', name: 'Stap 1 · Kennismaken', emoji: '🌱', rest: 30, desc: 'Op je knieën en korte houdtijden.', items: [
+    { exerciseId: 'pk-knee', sets: 3, sec: 20 }, { exerciseId: 'pk-forearm', sets: 2, sec: 10 },
+    { exerciseId: 'pk-side-knee', sets: 2, sec: 15 } ] },
+  { id: 'plank-2', name: 'Stap 2 · Opbouwen', emoji: '🌸', rest: 30, desc: 'Meer tijd op je tenen.', items: [
+    { exerciseId: 'pk-knee', sets: 2, sec: 30 }, { exerciseId: 'pk-forearm', sets: 3, sec: 20 },
+    { exerciseId: 'pk-side-knee', sets: 2, sec: 20 } ] },
+  { id: 'plank-3', name: 'Stap 3 · Volhouden', emoji: '🌷', rest: 30, desc: 'Hoge plank erbij.', items: [
+    { exerciseId: 'pk-forearm', sets: 3, sec: 30 }, { exerciseId: 'pk-high', sets: 2, sec: 20 },
+    { exerciseId: 'pk-side-knee', sets: 2, sec: 25 } ] },
+  { id: 'plank-4', name: 'Stap 4 · Sterker', emoji: '💪', rest: 25, desc: 'Echte zijplank en langer houden.', items: [
+    { exerciseId: 'pk-forearm', sets: 3, sec: 40 }, { exerciseId: 'pk-high', sets: 2, sec: 30 },
+    { exerciseId: 'pk-side', sets: 2, sec: 20 } ] },
+  { id: 'plank-5', name: 'Stap 5 · Doel: 1 minuut', emoji: '🔥', rest: 25, desc: '1 minuut planken + schoudertikken.', items: [
+    { exerciseId: 'pk-forearm', sets: 3, sec: 60 }, { exerciseId: 'pk-tap', sets: 2, sec: 30 },
+    { exerciseId: 'pk-side', sets: 2, sec: 30 } ] },
 ];
 
 /* ---------- Thuis met dumbbell / kettlebell ---------- */
@@ -1181,9 +1243,10 @@ const HR_ZONES = [
   { from: 90, to: 100, name: 'Zone 5 · Maximaal', feel: 'Sprint, kort vol te houden' },
 ];
 
-const CATALOG = [...PILATES_EXERCISES, ...MAT_EXERCISES, ...GYM_EXERCISES, ...HOME_EXERCISES];
-/** Getimede (volledig-scherm) programma's met niveaus. */
+const CATALOG = [...PILATES_EXERCISES, ...MAT_EXERCISES, ...PLANK_EXERCISES, ...GYM_EXERCISES, ...HOME_EXERCISES];
+/** Getimede (volledig-scherm) programma's met niveaus. `fixed` = vaste opbouw, géén "trainingsduur"-keuze. */
 const PLAYER_PROGRAMS = {
   pilates: { title: 'Pilates met bord', sub: 'Pilatesbord met glijplaat, handgrepen & koorden', short: 'Pilatesbord', levels: PILATES_LEVELS, exercises: PILATES_EXERCISES },
   mat: { title: 'Pilates op matje', sub: 'Alleen een matje nodig', short: 'Pilates matje', levels: MAT_LEVELS, exercises: MAT_EXERCISES },
+  plank: { title: 'Planken voor beginners', sub: 'In 5 stappen naar 1 minuut planken', short: 'Planken', levels: PLANK_LEVELS, exercises: PLANK_EXERCISES, fixed: true },
 };

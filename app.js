@@ -6,7 +6,7 @@
    ========================================================= */
 
 /* ---------- Constants ---------- */
-const APP_VERSION = 'v14';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
+const APP_VERSION = 'v15';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
 const STORAGE_KEY = 'workout-tracker:v1';          // legacy (vóór profielen) + prefix
 const TIMER_KEY = 'workout-tracker:timer';
 const PERSON_KEY = 'workout-tracker:person';       // laatst gekozen persoon
@@ -529,7 +529,7 @@ function renderUnsafe() {
   const timed = view === 'workout' && !!db.active?.run;          // run-sessie of pilates-speler
   const isPlayer = timed && db.active.program === 'pilates';
   const renderers = {
-    who: renderWho, home: renderHome, run: renderRun, thuis: renderThuis, pilates: renderPilates, mat: renderPilates,
+    who: renderWho, home: renderHome, run: renderRun, thuis: renderThuis, pilates: renderPilates, mat: renderPilates, plank: renderPlank,
     dumbbell: renderHomeWeights, kettlebell: renderHomeWeights, gym: renderGym, heart: renderHeart, log: renderLog,
     progress: () => renderProgress(), // staat in progress.js (laadt na app.js)
   };
@@ -729,7 +729,7 @@ function renderHome() {
 
     <div class="programs">
       ${programCard('run', 'Hardloopschema', next ? `${doneCount}/30 · volgende: ${runTitle(next)}` : 'Schema afgerond! 🎉', doneCount / 30)}
-      ${programCard('thuis', 'Thuis trainen', lastHome ? `Laatst: ${esc(lastHome.name)} · ${relDays(lastHome.startedAt)}` : 'Pilates (bord/matje) · dumbbell · kettlebell')}
+      ${programCard('thuis', 'Thuis trainen', lastHome ? `Laatst: ${esc(lastHome.name)} · ${relDays(lastHome.startedAt)}` : 'Pilates (bord/matje) · dumbbell · kettlebell · planken')}
       ${programCard('gym', 'Basic-Fit', lastGym ? `Laatst: ${esc(lastGym.name)} · ${relDays(lastGym.startedAt)}` : 'Armen · Full Body · Bil 1–3')}
     </div>
 
@@ -968,6 +968,7 @@ const THUIS_OPTIONS = [
   { view: 'mat', emoji: '🌿', title: 'Pilates op matje', sub: 'Alleen een matje · volledig scherm' },
   { view: 'dumbbell', emoji: '💪', title: 'Thuis met dumbbell', sub: 'Billen, full body of armen · kg per set' },
   { view: 'kettlebell', emoji: '🔔', title: 'Thuis met kettlebell', sub: 'Swings, squats & meer · kg per set' },
+  { view: 'plank', emoji: '⏱️', title: 'Planken voor beginners', sub: 'In 5 stappen naar 1 minuut · volledig scherm' },
 ];
 function renderThuis() {
   return `
@@ -1041,6 +1042,38 @@ function renderPilates() {
       </div>
     </details>
     <h2>Alle oefeningen</h2>
+    ${exGrid(prog.exercises)}`;
+}
+
+/* ----- Planken voor beginners: vaste opbouw in stappen (zelfde volledig-scherm speler) ----- */
+function renderPlank() {
+  const prog = PLAYER_PROGRAMS.plank;
+  const doneOf = (id) => db.history.filter((s) => s.templateId === id).length;
+  // aanbevolen stap: de eerste die nog geen 2× gedaan is
+  const next = prog.levels.find((l) => doneOf(l.id) < 2) || prog.levels[prog.levels.length - 1];
+  return `
+    ${backHeader(prog.title, prog.sub, 'thuis')}
+    <section class="card setting">
+      <p class="label">Zo werkt het</p>
+      <p class="muted small note">Plank 3× per week (bv. om de dag). Doe elke stap <strong>2–3 keer</strong> en ga pas door als
+        de laatste set nog netjes lukt: rechte rug, heupen niet laten zakken. Lukt het niet? Knieën neer en de tijd afmaken.
+        Zijplanken doe je links én rechts (de speler wisselt vanzelf).</p>
+    </section>
+    <p class="label">Kies je stap <span class="muted small">— start op volledig scherm, schakelt vanzelf door</span></p>
+    <div class="list">
+      ${prog.levels.map((l) => {
+        const entries = l.items.map((it) => newEntry(it.exerciseId, it));
+        const total = segsTotal(buildPlayerSegs(l, entries));
+        const n = doneOf(l.id);
+        return `
+        <button class="card level" data-action="start-pilates" data-program="plank" data-id="${l.id}">
+          <span class="level-head"><span class="pc-emoji">${l.emoji}</span><span class="grow"><span class="pc-title">${esc(l.name)}${l === next ? ' <span class="muscle-pill">volgende</span>' : ''}</span>
+          <span class="pc-sub">${esc(l.desc)} ± ${Math.max(1, Math.round(total / 60))} min · rust ${l.rest} s${n ? ` · ✓ ${n}× gedaan` : ''}</span></span><span class="chev">▶</span></span>
+          <span class="level-ex">${l.items.map((it) => `${esc(exName(it.exerciseId))} ${it.sets}× ${it.sec} s${exById(it.exerciseId)?.uni ? ' per kant' : ''}`).join(' · ')}</span>
+        </button>`;
+      }).join('')}
+    </div>
+    <h2>Alle plank-oefeningen</h2>
     ${exGrid(prog.exercises)}`;
 }
 
@@ -2010,7 +2043,7 @@ function buildTimedLevel(programKey, levelId, minutes) {
 
 async function startPilates(levelId, programKey = 'pilates') {
   const prog = PLAYER_PROGRAMS[programKey] || PLAYER_PROGRAMS.pilates;
-  const minutes = pilatesMinutes();
+  const minutes = prog.fixed ? null : pilatesMinutes(); // planken: vaste opbouw, geen tijdskeuze
   const l = minutes ? buildTimedLevel(programKey, levelId, minutes) : prog.levels.find((x) => x.id === levelId);
   if (!l || !(await confirmReplaceActive())) return;
   enterFullscreen(); // zo vroeg mogelijk: moet binnen de tik van de gebruiker
@@ -2095,6 +2128,7 @@ function renderPlayer() {
         ${shown.side ? `<p class="center"><span class="side-pill big side-${shown.side}">${shown.side === 'L' ? '⬅ ' : ''}${sideLabel(shown.side, entry.uni || 'kant')}${shown.side === 'R' ? ' ➡' : ''}</span></p>` : ''}
         <p class="player-meta">Set ${setNo}/${setsPerSide(entry)} · 🎯 ${esc(entry.target)}</p>
         ${ex?.muscle ? `<p class="center"><span class="muscle-pill">💪 ${esc(ex.muscle)}</span></p>` : ''}
+        ${ex?.tip && ex.program === 'plank' ? `<p class="player-note">💡 ${esc(ex.tip)}</p>` : ''}
         ${note ? `<p class="player-note">📝 ${esc(note)}</p>` : ''}
         <p class="player-time" id="run-time">–:–</p>
         <div class="run-progress"><div id="run-bar"></div></div>
