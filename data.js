@@ -191,6 +191,92 @@ const POSES = {
   'g-slrdl': { holds: [{ at: 'w', t: 'db' }], dur: 3.2, frames: [
     fr({ h: [100, 22], n: [100, 36], p: [100, 72], e: [102, 54], w: [103, 70], k: [97, 98], f: [93, 121], k2: [101, 98], f2: [100, 124] }),
     fr({ h: [141, 55], n: [128, 60], p: [96, 72], e: [128, 75], w: [128, 90], k: [72, 72], f: [47, 70], k2: [101, 98], f2: [100, 124] })] },
+  /* ----- v9: complete Basic-Fit (machines, rack, kabels, functioneel, cardio) ----- */
+  'g-rotary': { front: true, props: EQ.pad(88, 44, 24, 40) + EQ.pad(82, 84, 36, 7), holds: [{ at: 'w', t: 'grip' }], dur: 2.6, frames: [
+    fr({ h: [100, 34], n: [100, 48], p: [100, 84], e: [92, 56], w: [100, 52], e2: [108, 56], w2: [100, 52], k: [93, 92], f: [93, 118], k2: [107, 92], f2: [107, 118] }),
+    fr({ h: [104, 34], n: [102, 48], p: [100, 84], e: [96, 52], w: [110, 50], e2: [114, 58], w2: [110, 50], k: [93, 92], f: [93, 118], k2: [107, 92], f2: [107, 118] })] },
+  'g-standcurl': { props: '<rect class="eq" x="104" y="44" width="8" height="30" rx="3"/><rect class="eq-line" x="114" y="40" width="5" height="84"/>', holds: [{ at: 'f', t: 'pad' }], dur: 2.4, frames: [
+    fr({ h: [104, 22], n: [102, 36], p: [98, 72], e: [108, 50], w: [116, 56], k: [99, 98], f: [98, 122], k2: [101, 98], f2: [102, 124] }),
+    fr({ h: [104, 22], n: [102, 36], p: [98, 72], e: [108, 50], w: [116, 56], k: [99, 98], f: [80, 82], k2: [101, 98], f2: [102, 124] })] },
+  'g-beltsquat': { props: '<rect class="eq" x="66" y="122" width="66" height="4" rx="2"/>', holds: [{ at: 'p', t: 'plate', dy: 18 }], dur: 2.8, frames: [
+    [100, 22, 100, 36, 100, 72, 110, 50, 124, 52, 101, 98, 100, 124],
+    [101, 43, 96, 56, 82, 92, 108, 64, 122, 64, 108, 100, 100, 124]] },
+  'g-revhyper': { props: '<rect class="eq" x="90" y="74" width="54" height="8" rx="3"/><rect class="eq-line" x="114" y="82" width="5" height="42"/><rect class="eq" x="136" y="86" width="10" height="6" rx="2"/>', dur: 2.4, frames: [
+    fr({ h: [150, 62], n: [138, 70], p: [100, 74], e: [138, 84], w: [142, 94], k: [96, 100], f: [94, 122] }),
+    fr({ h: [150, 62], n: [138, 70], p: [100, 74], e: [138, 84], w: [142, 94], k: [74, 72], f: [48, 70] })] },
+  'g-cablefly': { front: true, props: EQ.tower(10, 14) + EQ.tower(180, 14), cables: [{ from: [15, 14], to: 'w' }, { from: [185, 14], to: 'w2' }],
+    holds: [{ at: 'w', t: 'grip' }, { at: 'w2', t: 'grip' }], dur: 2.6, frames: [
+    fr({ ...FR, e: [84, 40], w: [70, 36], e2: [116, 40], w2: [130, 36] }),
+    fr({ ...FR, e: [92, 52], w: [100, 60], e2: [108, 52], w2: [100, 60] })] },
+  'g-straightarm': { props: EQ.tower(140, 12), cables: [{ from: [145, 12], to: 'w' }], holds: [{ at: 'w', t: 'bar' }], dur: 2.4, frames: [
+    fr({ ...ST, h: [106, 24], n: [103, 37], e: [114, 28], w: [126, 22] }),
+    fr({ ...ST, h: [106, 24], n: [103, 37], e: [106, 52], w: [108, 68] })] },
+  'g-woodchop': { front: true, props: EQ.tower(10, 14), cables: [{ from: [15, 14], to: 'w' }], holds: [{ at: 'w', t: 'grip' }], dur: 2.4, frames: [
+    fr({ ...FR, e: [90, 42], w: [80, 30], e2: [94, 44], w2: [82, 32] }),
+    fr({ ...FR, h: [102, 22], e: [110, 60], w: [120, 72], e2: [108, 62], w2: [118, 74] })] },
+  'g-uprightrow': { props: EQ.tower(140, 118), cables: [{ from: [145, 118], to: 'w' }], holds: [{ at: 'w', t: 'bar' }], dur: 2.4, frames: [
+    fr({ ...ST, e: [103, 54], w: [106, 72] }), fr({ ...ST, e: [112, 34], w: [106, 44] })] },
+  'g-deadlift': { holds: [{ at: 'w', t: 'plate', dy: 10 }], dur: 3, frames: [
+    fr({ h: [128, 62], n: [118, 70], p: [88, 90], e: [118, 86], w: [118, 101], k: [108, 100], f: [100, 124] }),
+    fr({ ...ST, e: [102, 54], w: [103, 74] })] },
+  'g-goodmorning': { holds: [{ at: 'n', t: 'plate', dx: -2, dy: -3 }], dur: 3, frames: [
+    [100, 22, 100, 36, 100, 72, 108, 44, 102, 34, 101, 98, 100, 124],
+    [130, 50, 118, 58, 86, 74, 122, 64, 116, 56, 98, 99, 100, 124]] },
+  'g-shrug': { holds: [{ at: 'w', t: 'db' }], dur: 1.8, frames: [
+    fr({ ...ST, e: [101, 54], w: [102, 70] }), fr({ ...ST, h: [100, 19], n: [100, 32], e: [101, 50], w: [102, 66] })] },
+  'g-farmer': { holds: [{ at: 'w', t: 'db' }], dur: 1.2, frames: [
+    fr({ ...ST, e: [101, 54], w: [102, 70], k: [106, 98], f: [112, 124], k2: [94, 98], f2: [88, 124] }),
+    fr({ ...ST, e: [101, 54], w: [102, 70], k: [94, 98], f: [88, 124], k2: [106, 98], f2: [112, 124] })] },
+  'g-landpress': { cables: [{ from: [30, 124], to: 'w', bar: true }], holds: [{ at: 'w', t: 'grip' }], dur: 2.4, frames: [
+    fr({ ...ST, e: [110, 46], w: [108, 32] }), fr({ ...ST, e: [114, 28], w: [126, 18] })] },
+  'g-pullup': { props: '<rect class="eq" x="76" y="8" width="56" height="5" rx="2"/>', dur: 2.6, frames: [
+    fr({ h: [100, 34], n: [100, 46], p: [100, 82], e: [102, 30], w: [104, 13], k: [98, 106], f: [88, 118] }),
+    fr({ h: [100, 20], n: [100, 32], p: [100, 68], e: [92, 24], w: [104, 13], k: [98, 92], f: [88, 104] })] },
+  'g-hangleg': { props: '<rect class="eq" x="76" y="8" width="56" height="5" rx="2"/>', dur: 2.6, frames: [
+    fr({ h: [100, 34], n: [100, 46], p: [100, 82], e: [102, 30], w: [104, 13], k: [101, 106], f: [100, 122] }),
+    fr({ h: [100, 34], n: [100, 46], p: [100, 82], e: [102, 30], w: [104, 13], k: [126, 80], f: [150, 78] })] },
+  'g-dips': { props: '<rect class="eq" x="94" y="70" width="34" height="4" rx="2"/><rect class="eq-line" x="120" y="74" width="5" height="50"/>', dur: 2.4, frames: [
+    fr({ h: [100, 18], n: [100, 32], p: [100, 68], e: [101, 51], w: [102, 70], k: [98, 92], f: [86, 100] }),
+    fr({ h: [100, 32], n: [100, 46], p: [100, 82], e: [88, 58], w: [102, 70], k: [98, 106], f: [86, 114] })] },
+  'g-pushup': { dur: 2.2, frames: [
+    fr({ h: [146, 92], n: [134, 98], p: [100, 110], e: [134, 111], w: [134, 124], k: [76, 116], f: [50, 123] }),
+    fr({ h: [146, 110], n: [134, 114], p: [100, 118], e: [120, 116], w: [134, 124], k: [76, 121], f: [50, 123] })] },
+  'g-situp': { props: '<polygon class="eq" points="30,74 124,104 124,112 30,82"/><rect class="eq-line" x="114" y="110" width="5" height="14"/><rect class="eq-line" x="36" y="82" width="5" height="42"/><circle class="eq" cx="44" cy="66" r="5"/>', dur: 2.6, frames: [
+    fr({ h: [122, 99], n: [110, 95], p: [76, 84], e: [100, 92], w: [92, 88], k: [54, 66], f: [40, 72] }),
+    fr({ h: [104, 44], n: [96, 56], p: [76, 84], e: [104, 70], w: [98, 64], k: [54, 66], f: [40, 72] })] },
+  'g-abwheel': { holds: [{ at: 'w', t: 'wheel' }], dur: 3, frames: [
+    fr({ h: [108, 82], n: [96, 88], p: [66, 98], e: [98, 103], w: [100, 118], k: [62, 123], f: [40, 124] }),
+    fr({ h: [124, 96], n: [112, 102], p: [78, 108], e: [124, 110], w: [136, 118], k: [62, 123], f: [40, 124] })] },
+  'g-russian': { holds: [{ at: 'w', t: 'ball' }], dur: 1.6, frames: [
+    fr({ h: [68, 76], n: [74, 88], p: [92, 116], e: [86, 98], w: [98, 100], k: [112, 98], f: [132, 104] }),
+    fr({ h: [66, 76], n: [72, 88], p: [92, 116], e: [80, 100], w: [88, 108], k: [112, 98], f: [132, 104] })] },
+  'g-wallball': { props: '<rect class="eq" x="150" y="4" width="8" height="120"/><circle class="eq-dark" cx="154" cy="14" r="3"/>', holds: [{ at: 'w', t: 'ball' }], dur: 2, frames: [
+    [101, 43, 96, 56, 82, 92, 110, 62, 110, 50, 108, 100, 100, 124],
+    [100, 22, 100, 36, 100, 72, 103, 21, 104, 6, 101, 98, 100, 124]] },
+  'g-ropes': { cables: [{ from: [192, 120], to: 'w', bar: true }], holds: [{ at: 'w', t: 'grip' }], dur: 0.5, frames: [
+    fr({ h: [106, 36], n: [102, 50], p: [94, 84], e: [112, 64], w: [126, 62], k: [108, 104], f: [104, 124] }),
+    fr({ h: [106, 36], n: [102, 50], p: [94, 84], e: [112, 56], w: [126, 46], k: [108, 104], f: [104, 124] })] },
+  // Cardio
+  'g-treadmill': { props: '<polygon class="eq" points="30,116 150,108 152,116 32,124"/><rect class="eq-line" x="146" y="46" width="5" height="66"/><rect class="eq" x="132" y="42" width="26" height="8" rx="3"/>', dur: 1.1, frames: [
+    fr({ h: [100, 12], n: [100, 26], p: [100, 62], e: [108, 42], w: [112, 52], k: [108, 86], f: [112, 110], e2: [94, 42], w2: [88, 50], k2: [94, 88], f2: [88, 112] }),
+    fr({ h: [100, 12], n: [100, 26], p: [100, 62], e: [94, 42], w: [88, 50], k: [94, 88], f: [88, 112], e2: [108, 42], w2: [112, 52], k2: [108, 86], f2: [112, 110] })] },
+  'g-crosstrainer': { props: '<rect class="eq" x="60" y="118" width="90" height="6" rx="3"/><rect class="eq-line" x="128" y="30" width="5" height="88"/>', dur: 1.4, frames: [
+    fr({ h: [100, 14], n: [100, 28], p: [100, 64], e: [110, 44], w: [122, 36], k: [108, 90], f: [112, 112], e2: [106, 46], w2: [116, 48], k2: [96, 90], f2: [88, 114] }),
+    fr({ h: [100, 14], n: [100, 28], p: [100, 64], e: [106, 46], w: [116, 48], k: [96, 90], f: [88, 114], e2: [110, 44], w2: [122, 36], k2: [108, 90], f2: [112, 112] })] },
+  'g-bike': { props: '<polyline class="eq-frame" points="88,80 104,106 128,62"/><circle class="eq" cx="104" cy="106" r="12"/><rect class="eq" x="80" y="74" width="18" height="5" rx="2"/><rect class="eq" x="122" y="56" width="14" height="5" rx="2"/>', dur: 0.9, frames: [
+    fr({ h: [122, 36], n: [112, 46], p: [88, 74], e: [122, 56], w: [130, 58], k: [110, 82], f: [106, 104], k2: [100, 92], f2: [100, 116] }),
+    fr({ h: [122, 36], n: [112, 46], p: [88, 74], e: [122, 56], w: [130, 58], k: [100, 92], f: [100, 116], k2: [110, 82], f2: [106, 104] })] },
+  'g-recumbent': { props: '<polygon class="eq" points="50,58 58,54 76,100 68,104"/><rect class="eq" x="64" y="98" width="30" height="7" rx="3"/><rect class="eq-line" x="70" y="105" width="5" height="19"/><circle class="eq" cx="136" cy="98" r="10"/>', dur: 1, frames: [
+    fr({ h: [58, 50], n: [64, 62], p: [80, 96], e: [72, 80], w: [82, 92], k: [106, 84], f: [128, 94], k2: [108, 92], f2: [132, 104] }),
+    fr({ h: [58, 50], n: [64, 62], p: [80, 96], e: [72, 80], w: [82, 92], k: [108, 92], f: [132, 104], k2: [106, 84], f2: [128, 94] })] },
+  'g-rower': { props: '<rect class="eq" x="28" y="108" width="128" height="6" rx="3"/><circle class="eq" cx="150" cy="96" r="12"/><rect class="eq" x="110" y="98" width="10" height="10" rx="2"/>',
+    cables: [{ from: [150, 96], to: 'w' }], holds: [{ at: 'w', t: 'bar' }], dur: 2, frames: [
+    fr({ h: [104, 58], n: [96, 70], p: [80, 104], e: [108, 80], w: [124, 84], k: [100, 82], f: [114, 104] }),
+    fr({ h: [46, 58], n: [52, 70], p: [58, 104], e: [64, 86], w: [78, 84], k: [84, 98], f: [114, 104] })] },
+  'g-stairs': { props: '<polygon class="eq" points="70,124 70,114 96,114 96,104 122,104 122,124"/><rect class="eq-line" x="126" y="40" width="5" height="84"/><rect class="eq" x="112" y="40" width="20" height="5" rx="2"/>', dur: 1.2, frames: [
+    fr({ h: [100, 16], n: [99, 30], p: [98, 66], e: [106, 48], w: [118, 50], k: [114, 84], f: [112, 104], k2: [94, 90], f2: [88, 114] }),
+    fr({ h: [100, 16], n: [99, 30], p: [98, 66], e: [106, 48], w: [118, 50], k: [94, 90], f: [88, 114], k2: [114, 84], f2: [112, 104] })] },
+
   /* ----- v8: TikTok-bilfavorieten en Basic-Fit toestellen/zones ----- */
   // Kas glute bridge: alleen het bovenste stuk van de hip thrust, kort en krachtig
   'g-kas': { props: EQ.bench(14, 52, 92), holds: [{ at: 'p', t: 'plate', dy: -11 }], dur: 1.2, frames: [
@@ -358,6 +444,14 @@ POSES['g-adduction'] = { ...POSES['g-abduction'], frames: [...POSES['g-abduction
 POSES['g-legext'] = { ...POSES['g-seatedlegcurl'], holds: [{ at: 'f', t: 'pad', dy: 3 }], frames: [...POSES['g-seatedlegcurl'].frames].reverse() };
 POSES['g-machinetri'] = { ...POSES['g-machinecurl'], frames: [...POSES['g-machinecurl'].frames].reverse() };
 POSES['g-pecdeck'] = { ...POSES['g-revfly'], frames: [...POSES['g-revfly'].frames].reverse() };
+// v9-afleidingen
+POSES['g-multihip'] = { ...POSES['g-cablekick'], cables: [], props: '<rect class="eq" x="132" y="30" width="12" height="94" rx="3"/><rect class="eq" x="116" y="42" width="22" height="8" rx="3"/>', holds: [{ at: 'k', t: 'pad', dx: -5 }] };
+POSES['g-preacher'] = { ...POSES['g-machinecurl'], holds: [{ at: 'w', t: 'bar' }] };
+POSES['g-bbbench'] = { ...POSES['g-dbbench'], props: `${EQ.bench(26, 100, 100)}<rect class="eq-line" x="40" y="44" width="4" height="80"/><rect class="eq" x="36" y="46" width="12" height="4"/>`, holds: [{ at: 'w', t: 'plate' }] };
+POSES['g-ohp'] = { ...POSES['g-dbpress'], holds: [{ at: 'w', t: 'smallplate' }] };
+POSES['g-frontsquat'] = { ...POSES['g-goblet'], holds: [{ at: 'n', t: 'plate', dx: 6, dy: 2 }] };
+POSES['g-landsquat'] = { ...POSES['g-goblet'], cables: [{ from: [30, 124], to: 'w', bar: true }], holds: [{ at: 'w', t: 'grip' }] };
+POSES['g-landrow'] = { ...POSES['g-dbrow'], cables: [{ from: [30, 124], to: 'w', bar: true }], holds: [{ at: 'w', t: 'grip' }] };
 // Back squat in het squat rack: zelfde beweging als de Smith-squat, maar met rack-palen en haken
 POSES['g-bbsquat'] = { ...POSES['g-smithsquat'], props: '<rect class="eq-line" x="66" y="10" width="6" height="114"/><rect class="eq-line" x="130" y="10" width="6" height="114"/><rect class="eq" x="62" y="40" width="14" height="4"/><rect class="eq" x="126" y="40" width="14" height="4"/>' };
 
@@ -375,6 +469,8 @@ const UNI = {
   'bf-band-walk': 'kant', 'bf-step-up': 'been', 'bf-smith-lunge': 'been', 'bf-donkey-kick': 'been', 'bf-b-stance-rdl': 'been',
   'bf-cable-lateral': 'arm', 'bf-db-kickback': 'arm',
   'bf-kneel-kickback': 'been',
+  'bf-multihip-kickback': 'been', 'bf-multihip-abduction': 'been', 'bf-standing-leg-curl': 'been',
+  'bf-iso-row': 'arm', 'bf-iso-chest': 'arm', 'bf-woodchop': 'kant', 'bf-landmine-press': 'arm',
   // Thuis
   'hd-lunge': 'been', 'hd-sl-rdl': 'been', 'hk-sl-rdl': 'been', 'hk-lunge': 'been', 'hk-row': 'arm', 'hk-press': 'arm',
   'hd-bulgarian': 'been', 'hd-step-up': 'been', 'hd-sl-hip-thrust': 'been', 'hd-single-row': 'arm', 'hd-renegade': 'arm',
@@ -689,12 +785,30 @@ const GYM_MUSCLES = {
   'bf-incline-db-press': 'Borst (bovenkant)', 'bf-knee-raise': 'Buik (onderkant)', 'bf-kb-swing': 'Bil & hamstrings',
   'bf-slam': 'Core & full body', 'bf-sled-push': 'Bil & bovenbenen', 'bf-trx-row': 'Rug', 'bf-box-jump': 'Bil & bovenbenen',
   'bf-foamroll': 'Herstel: bil & benen',
+  // v9
+  'bf-torso-rotation': 'Buik (schuine buikspieren)', 'bf-multihip-kickback': 'Bil (gluteus maximus)',
+  'bf-multihip-abduction': 'Bil (gluteus medius)', 'bf-seated-calf': 'Kuiten', 'bf-pullover-machine': 'Rug (lats)',
+  'bf-decline-press': 'Borst (onderkant)', 'bf-standing-leg-curl': 'Hamstrings (achterkant been)',
+  'bf-iso-chest': 'Borst', 'bf-iso-row': 'Rug (midden)', 'bf-belt-squat': 'Bil & voorkant bovenbeen',
+  'bf-bb-bench': 'Borst', 'bf-front-squat': 'Voorkant bovenbeen & bil', 'bf-ohp': 'Schouders (voorkant)',
+  'bf-good-morning': 'Hamstrings & bil', 'bf-preacher': 'Biceps', 'bf-decline-situp': 'Buik',
+  'bf-ghd': 'Hamstrings & bil', 'bf-reverse-hyper': 'Bil & onderrug', 'bf-pullups': 'Rug (lats) & biceps',
+  'bf-dips': 'Triceps & borst', 'bf-hanging-leg-raise': 'Buik (onderkant)', 'bf-cable-fly': 'Borst',
+  'bf-straight-arm': 'Rug (lats)', 'bf-woodchop': 'Buik (schuine buikspieren)', 'bf-upright-row': 'Schouders & trapezius',
+  'bf-landmine-squat': 'Voorkant bovenbeen & bil', 'bf-landmine-row': 'Rug (midden)', 'bf-landmine-press': 'Schouders & borst',
+  'bf-deadlift': 'Bil, hamstrings & rug', 'bf-bb-row': 'Rug (midden)', 'bf-shrug': 'Trapezius (bovenrug)',
+  'bf-farmer': 'Core, grip & trapezius', 'bf-pushups': 'Borst & triceps', 'bf-ab-wheel': 'Buik (core)',
+  'bf-russian-twist': 'Buik (schuine buikspieren)', 'bf-wall-ball': 'Voorkant bovenbeen & schouders',
+  'bf-battle-ropes': 'Conditie, schouders & core',
+  'bf-tm-incline': 'Conditie & bil', 'bf-tm-run': 'Conditie', 'bf-crosstrainer': 'Conditie (hele lichaam)',
+  'bf-bike': 'Conditie & bovenbenen', 'bf-recumbent': 'Conditie & bovenbenen', 'bf-rower': 'Conditie, rug & benen',
+  'bf-stairs': 'Conditie & bil', 'bf-airbike': 'Conditie (hele lichaam)',
 };
 
 /** Basic-Fit toestellen en zones → welke oefeningen erbij horen (overzicht in de app + "📍 Toestel" in de uitleg). */
 const GYM_EQUIPMENT = [
   { zone: 'Krachtapparaten met gewichtsblok', emoji: '🧱', items: {
-    'Chest press machine': ['bf-chest-press', 'bf-incline-press'],
+    'Chest press machine (vlak / incline / decline)': ['bf-chest-press', 'bf-incline-press', 'bf-decline-press'],
     'Pec deck / butterfly (fly & reverse fly)': ['bf-pec-deck', 'bf-reverse-fly'],
     'Lat pulldown machine': ['bf-lat-pulldown', 'bf-close-pulldown'],
     'Seated row machine': ['bf-seated-row', 'bf-low-row'],
@@ -704,11 +818,14 @@ const GYM_EQUIPMENT = [
     'Tricep extension / press machine': ['bf-triceps-machine'],
     'Leg press machine': ['bf-leg-press', 'bf-lp-high', 'bf-sl-leg-press', 'bf-sl-leg-press-r', 'bf-lp-sl-high-L', 'bf-lp-sl-high-R'],
     'Leg extension machine': ['bf-leg-extension'],
-    'Leg curl (zittend / liggend)': ['bf-seated-leg-curl', 'bf-leg-curl'],
+    'Leg curl (zittend / liggend / staand)': ['bf-seated-leg-curl', 'bf-leg-curl', 'bf-standing-leg-curl'],
+    'Multi-hip machine': ['bf-multihip-kickback', 'bf-multihip-abduction'],
+    'Torso rotation machine': ['bf-torso-rotation'],
+    'Pullover machine': ['bf-pullover-machine'],
     'Hip abductor machine': ['bf-abduction', 'bf-abduction-lean'],
     'Hip adductor machine': ['bf-adduction'],
     'Glute / kickback machine': ['bf-glute-kickback-machine'],
-    'Calf raise machine': ['bf-calf-raise'],
+    'Calf raise machine (staand / zittend)': ['bf-calf-raise', 'bf-seated-calf'],
     'Ab crunch machine': ['bf-ab-crunch'],
     'Lower back machine': ['bf-lowerback-machine'],
     'Assisted pull-up / dip machine': ['bf-assisted-pullup', 'bf-dip-machine'],
@@ -719,27 +836,46 @@ const GYM_EQUIPMENT = [
     'Leg press 45° / hack squat / pendulum squat': ['bf-lp45-sl-L', 'bf-lp45-sl-R', 'bf-hack-squat', 'bf-pendulum-squat'],
     'Plate-loaded shoulder press': ['bf-pl-shoulder-press'],
     'Plate-loaded hip thrust machine': ['bf-hip-thrust-machine'],
+    'Iso-lateral chest press / row (1 arm)': ['bf-iso-chest', 'bf-iso-row'],
+    'Belt squat machine': ['bf-belt-squat'],
   } },
   { zone: 'Racks, bankjes & kabels', emoji: '🏗️', items: {
-    'Squat rack / power rack': ['bf-bb-squat', 'bf-hip-thrust'],
+    'Squat rack / power rack': ['bf-bb-squat', 'bf-front-squat', 'bf-ohp', 'bf-good-morning', 'bf-hip-thrust'],
+    'Bench press-rack': ['bf-bb-bench'],
+    'Landmine': ['bf-landmine-squat', 'bf-landmine-row', 'bf-landmine-press'],
+    'Preacher curl-bank (Scott)': ['bf-preacher'],
+    'Buikbank (decline)': ['bf-decline-situp'],
+    'GHD / reverse hyper': ['bf-ghd', 'bf-reverse-hyper'],
     'Smith machine (multipress)': ['bf-smith-squat', 'bf-smith-hip-thrust', 'bf-smith-lunge'],
     'Kabelstation / functional trainer': ['bf-cable-kickback', 'bf-kneel-kickback', 'bf-diag-kickback', 'bf-cable-abduction', 'bf-pull-through',
       'bf-cable-curl', 'bf-rope-hammer', 'bf-pushdown', 'bf-pushdown-bar', 'bf-oh-cable-ext', 'bf-cable-lateral', 'bf-face-pull',
-      'bf-cable-chest-press', 'bf-cable-crunch'],
+      'bf-cable-chest-press', 'bf-cable-crunch', 'bf-cable-fly', 'bf-straight-arm', 'bf-woodchop', 'bf-upright-row'],
     'Bankjes (vlak / verstelbaar)': ['bf-db-bench-press', 'bf-incline-db-press', 'bf-kas-bridge', 'bf-bulgarian', 'bf-sl-hip-thrust', 'bf-step-up'],
     'Back extension-bank': ['bf-back-ext'],
-    "Pull-up bar / dip station / captain's chair": ['bf-knee-raise'],
+    "Pull-up bar / dip station / captain's chair": ['bf-pullups', 'bf-dips', 'bf-hanging-leg-raise', 'bf-knee-raise'],
   } },
   { zone: 'Losse gewichten & functionele zone', emoji: '🏃‍♀️', items: {
     'Dumbbells': ['bf-db-curl', 'bf-hammer-curl', 'bf-db-shoulder-press', 'bf-arnold', 'bf-lateral-raise', 'bf-db-oh-ext', 'bf-db-kickback',
-      'bf-db-rdl', 'bf-b-stance-rdl', 'bf-sl-rdl', 'bf-walking-lunge', 'bf-curtsy', 'bf-goblet-squat', 'bf-sumo-squat-db', 'bf-lateral-stepup'],
-    'Barbells & schijven': ['bf-bb-rdl', 'bf-bb-glute-bridge'],
+      'bf-db-rdl', 'bf-b-stance-rdl', 'bf-sl-rdl', 'bf-walking-lunge', 'bf-curtsy', 'bf-goblet-squat', 'bf-sumo-squat-db', 'bf-lateral-stepup',
+      'bf-shrug', 'bf-farmer'],
+    'Barbells & schijven': ['bf-deadlift', 'bf-bb-row', 'bf-bb-rdl', 'bf-bb-glute-bridge'],
     'EZ-curl bar / tricep bar': ['bf-ez-curl'],
-    'Kettlebells & medicine/slam balls': ['bf-kb-swing', 'bf-sl-kb-rdl', 'bf-sumo-dl', 'bf-slam'],
+    'Kettlebells & medicine/slam balls': ['bf-kb-swing', 'bf-sl-kb-rdl', 'bf-sumo-dl', 'bf-slam', 'bf-wall-ball', 'bf-russian-twist'],
+    'Battle ropes': ['bf-battle-ropes'],
     'Slee & kunstgrasbaan': ['bf-sled-push'],
     'TRX / suspension trainer': ['bf-trx-row'],
     'Plyobox': ['bf-box-jump'],
-    'Matje, foamroller & weerstandsbanden': ['bf-frog-pump', 'bf-donkey-kick', 'bf-fire-hydrant', 'bf-clamshell', 'bf-band-walk', 'bf-side-plank-raise', 'bf-foamroll'],
+    'Matje, foamroller & weerstandsbanden': ['bf-frog-pump', 'bf-donkey-kick', 'bf-fire-hydrant', 'bf-clamshell', 'bf-band-walk', 'bf-side-plank-raise',
+      'bf-pushups', 'bf-ab-wheel', 'bf-foamroll'],
+  } },
+  { zone: 'Cardio', emoji: '❤️‍🔥', items: {
+    'Loopband': ['bf-tm-incline', 'bf-tm-run'],
+    'Crosstrainer': ['bf-crosstrainer'],
+    'Hometrainer / spinningfiets': ['bf-bike'],
+    'Ligfiets (recumbent)': ['bf-recumbent'],
+    'Roeitrainer': ['bf-rower'],
+    'Traploper / StairMaster': ['bf-stairs'],
+    'Airbike': ['bf-airbike'],
   } },
 ];
 /** Extra wisselopties (⇄) zodat er altijd een alternatief is als een apparaat bezet is. */
@@ -877,8 +1013,59 @@ const GYM_EXERCISES = [
   { id: 'bf-trx-row', name: 'TRX row (suspension trainer)', pose: 'g-trxrow', tip: 'Lichaam als een plank, trek je borst naar de handvatten; meer schuin = zwaarder.' },
   { id: 'bf-box-jump', name: 'Box step-up / box jump (plyobox)', pose: 'g-latstep', tip: 'Begin met step-ups; springen alleen met zachte landing op de hele voet.' },
   { id: 'bf-foamroll', name: 'Foamrollen (bil & benen)', pose: 'g-foamroll', tip: 'Rol rustig 30–60 sec per plek over bil, hamstring en bovenbeen; adem door.' },
+  // v9 — machines met gewichtsblok
+  { id: 'bf-torso-rotation', name: 'Torso rotation machine', pose: 'g-rotary', tip: 'Heupen vast, draai rustig vanuit je buik; niet zwiepen. Beide kanten even vaak.' },
+  { id: 'bf-multihip-kickback', name: 'Multi-hip machine – kickback', pose: 'g-multihip', tip: 'Kussen achter je knie/bovenbeen, been naar achteren duwen en bil aanspannen; bovenlichaam stil.' },
+  { id: 'bf-multihip-abduction', name: 'Multi-hip machine – zijwaarts (abductie)', pose: 'g-cableabd', tip: 'Kussen tegen de buitenkant van je knie, been zijwaarts weg duwen; heupen recht.' },
+  { id: 'bf-seated-calf', name: 'Seated calf raise', pose: 'g-calf', tip: 'Kussen op je knieën, voorvoeten op de rand; hielen laag en dan zo hoog mogelijk.' },
+  { id: 'bf-pullover-machine', name: 'Pullover machine', pose: 'g-pullover', tip: 'Ellebogen tegen de kussens, beweeg in een boog van boven je hoofd naar je buik.' },
+  { id: 'bf-decline-press', name: 'Decline chest press machine', pose: 'g-chestpress', tip: 'Druk schuin naar beneden-voren; schouderbladen naar achteren.' },
+  { id: 'bf-standing-leg-curl', name: 'Staande leg curl (1 been)', pose: 'g-standcurl', tip: 'Buik tegen het kussen, krul je hiel naar je bil en laat in 3 tellen terugkomen.' },
+  // v9 — plate-loaded
+  { id: 'bf-iso-chest', name: 'Iso-lateral chest press (1 arm, plate-loaded)', pose: 'g-chestpress', tip: 'Eén arm tegelijk; zo werken links en rechts allebei even hard.' },
+  { id: 'bf-iso-row', name: 'Iso-lateral row (1 arm, plate-loaded)', pose: 'g-seatedrow', tip: 'Borst tegen het kussen, trek één handgreep naar je zij; schouder laag.' },
+  { id: 'bf-belt-squat', name: 'Belt squat machine', pose: 'g-beltsquat', tip: 'Gewicht hangt aan een heupband: geen druk op je rug. Zak diep, duw via je hielen.' },
+  // v9 — racks, bankjes, optrekstang
+  { id: 'bf-bb-bench', name: 'Bench press (halterstang)', pose: 'g-bbbench', tip: 'Voeten plat, schouderbladen samen; stang naar je onderborst en recht omhoog. Gebruik de veiligheidsstangen.' },
+  { id: 'bf-front-squat', name: 'Front squat (halterstang)', pose: 'g-frontsquat', tip: 'Stang vóór op je schouders, ellebogen hoog; borst omhoog en zak recht naar beneden.' },
+  { id: 'bf-ohp', name: 'Overhead press (halterstang, staand)', pose: 'g-ohp', tip: 'Buik en billen aan; druk de stang langs je gezicht recht omhoog.' },
+  { id: 'bf-good-morning', name: 'Good morning (halterstang)', pose: 'g-goodmorning', tip: 'Stang op je bovenrug, knieën licht gebogen; buig vanuit je heupen met een rechte rug. Licht gewicht.' },
+  { id: 'bf-preacher', name: 'Preacher curl (Scott-bank)', pose: 'g-preacher', tip: 'Bovenarmen plat op de schuine bank; langzaam laten zakken tot bijna gestrekt.' },
+  { id: 'bf-decline-situp', name: 'Sit-ups (decline buikbank)', pose: 'g-situp', tip: 'Voeten onder de rol, rol rustig op; hoe schuiner de bank, hoe zwaarder.' },
+  { id: 'bf-ghd', name: 'Glute-ham raise / GHD', pose: 'g-backext', tip: 'Enkels onder de rollen; strek met je billen en hamstrings, niet met je onderrug.' },
+  { id: 'bf-reverse-hyper', name: 'Reverse hyper', pose: 'g-revhyper', tip: 'Lig met je heupen op de rand, benen hangen; til ze gestrekt op met je billen.' },
+  { id: 'bf-pullups', name: 'Pull-ups / chin-ups (optrekstang)', pose: 'g-pullup', tip: 'Schouders omlaag, trek je borst naar de stang. Te zwaar? Gebruik de assisted machine of een band.' },
+  { id: 'bf-dips', name: 'Dips (dipstation)', pose: 'g-dips', tip: 'Zak tot je ellebogen ± 90° zijn, iets voorover = meer borst, rechtop = meer triceps.' },
+  { id: 'bf-hanging-leg-raise', name: 'Hanging leg raise (optrekstang)', pose: 'g-hangleg', tip: 'Hang stil, til je benen (of knieën = lichter) op zonder te zwaaien.' },
+  // v9 — kabels & landmine
+  { id: 'bf-cable-fly', name: 'Cable fly (cable crossover)', pose: 'g-cablefly', tip: 'Kabels hoog, stap naar voren; armen licht gebogen in een boog naar elkaar toe.' },
+  { id: 'bf-straight-arm', name: 'Straight-arm pulldown (kabel)', pose: 'g-straightarm', tip: 'Armen gestrekt, duw de stang in een boog naar je bovenbenen met je rugspieren.' },
+  { id: 'bf-woodchop', name: 'Cable woodchopper', pose: 'g-woodchop', tip: 'Kabel hoog, trek diagonaal naar beneden langs je lichaam; draai vanuit je buik.' },
+  { id: 'bf-upright-row', name: 'Upright row (kabel)', pose: 'g-uprightrow', tip: 'Stang dicht langs je lichaam omhoog tot borsthoogte, ellebogen leiden.' },
+  { id: 'bf-landmine-squat', name: 'Landmine squat', pose: 'g-landsquat', tip: 'Uiteinde van de stang voor je borst; zak diep met je borst omhoog.' },
+  { id: 'bf-landmine-row', name: 'Landmine row', pose: 'g-landrow', tip: 'Voorovergebogen met rechte rug, trek het stanguiteinde naar je buik.' },
+  { id: 'bf-landmine-press', name: 'Landmine press (1 arm)', pose: 'g-landpress', tip: 'Stanguiteinde op schouderhoogte, druk schuin omhoog-voor; buik aan.' },
+  // v9 — barbells, dumbbells & functionele zone
+  { id: 'bf-deadlift', name: 'Deadlift (halterstang, klassiek)', pose: 'g-deadlift', tip: 'Stang boven je middenvoet, rug recht; duw de vloer weg en kom met je heupen naar voren.' },
+  { id: 'bf-bb-row', name: 'Barbell row (halterstang)', pose: 'g-tbar', tip: 'Voorover vanuit je heupen, trek de stang naar je navel; rug recht.' },
+  { id: 'bf-shrug', name: 'Shrugs (dumbbells)', pose: 'g-shrug', tip: 'Schouders recht omhoog naar je oren, 1 tel vasthouden; niet rollen.' },
+  { id: 'bf-farmer', name: "Farmer's walk (dumbbells / kettlebells)", pose: 'g-farmer', tip: 'Zware gewichten naast je lichaam, rechtop lopen met korte stappen; buik aan.' },
+  { id: 'bf-pushups', name: 'Push-ups', pose: 'g-pushup', tip: 'Rechte lijn van hoofd tot hielen; op je knieën of handen op een bankje = lichter.' },
+  { id: 'bf-ab-wheel', name: 'Ab wheel rollout', pose: 'g-abwheel', tip: 'Op je knieën, rol langzaam uit zolang je rug recht blijft; terug met je buik.' },
+  { id: 'bf-russian-twist', name: 'Russian twist (medicine ball)', pose: 'g-russian', tip: 'Leun iets achterover, voeten op of boven de grond; draai de bal van links naar rechts.' },
+  { id: 'bf-wall-ball', name: 'Wall balls (medicine ball)', pose: 'g-wallball', tip: 'Squat met de bal voor je borst en gooi hem bij het omhoog komen tegen de muur.' },
+  { id: 'bf-battle-ropes', name: 'Battle ropes', pose: 'g-ropes', tip: 'Halve squat, buik aan; maak snelle golven met je armen. 20–30 sec aan, dan rust.' },
+  // v9 — cardio (minuten + niveau)
+  { id: 'bf-tm-incline', name: 'Loopband – incline walk (12-3-30)', pose: 'g-treadmill', kind: 'cardio', tip: 'Helling 12%, ± 5 km/u, 30 min wandelen zonder de leuning vast te houden. Super voor je billen.' },
+  { id: 'bf-tm-run', name: 'Loopband – hardlopen / intervallen', pose: 'g-treadmill', kind: 'cardio', tip: 'Bijv. 1 min hard, 1 min wandelen. Helling 1% voelt als buiten lopen.' },
+  { id: 'bf-crosstrainer', name: 'Crosstrainer', pose: 'g-crosstrainer', kind: 'cardio', tip: 'Rechtop, duw en trek actief met je armen; weerstand zo dat je nog net kunt praten.' },
+  { id: 'bf-bike', name: 'Hometrainer / spinningfiets', pose: 'g-bike', kind: 'cardio', tip: 'Zadel op heuphoogte, knie bijna gestrekt onderin. Afwisselend zittend en staand.' },
+  { id: 'bf-recumbent', name: 'Ligfiets (recumbent bike)', pose: 'g-recumbent', kind: 'cardio', tip: 'Rug tegen de leuning; fijn als je rug of knieën gevoelig zijn.' },
+  { id: 'bf-rower', name: 'Roeitrainer', pose: 'g-rower', kind: 'cardio', tip: 'Eerst benen, dan leunen, dan armen; terug in omgekeerde volgorde. Rug recht.' },
+  { id: 'bf-stairs', name: 'Traploper / StairMaster', pose: 'g-stairs', kind: 'cardio', tip: 'Hele voet op de trede, iets voorover leunen voor meer bil; leuning alleen licht aanraken.' },
+  { id: 'bf-airbike', name: 'Airbike', pose: 'g-bike', kind: 'cardio', tip: 'Armen en benen tegelijk; hoe harder je trapt, hoe zwaarder. Ideaal voor korte intervallen.' },
 ].map((e) => ({
-  ...e, program: 'gym', kind: 'weights', muscle: GYM_MUSCLES[e.id], uni: UNI[e.id],
+  ...e, program: 'gym', kind: e.kind || 'weights', muscle: GYM_MUSCLES[e.id], uni: UNI[e.id],
   alts: [...new Set([...(e.alts || []), ...(GYM_EXTRA_ALTS[e.id] || [])])].filter((a) => a !== e.id),
 }));
 

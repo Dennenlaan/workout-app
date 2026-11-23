@@ -70,7 +70,12 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
    TikTok-bilfavorieten: Kas glute bridge, frog pumps, B-stance RDL, curtsy lunge, cable glute kickback,
    cable abduction/side kick — eenzijdige varianten via L/R-rijen (één oefening, per set Linker- en
    Rechterbeen), leg press-varianten als aparte L/R-oefeningen (zo gevraagd).
-   Catalogus v8: **165 oefeningen** (gym 98). Catalogus v7 was: 147 oefeningen (gym 80 incl. apparaten voor armen/borst/rug/benen en ±32 bil; pilatesbord
+   Catalogus v9: **210 oefeningen, waarvan 143 Basic-Fit over 55 toestellen in 5 zones** (+ zone
+   **Cardio**: loopband (incl. 12-3-30 incline walk), crosstrainer, hometrainer/spinning, ligfiets,
+   roeitrainer, traploper, airbike). Cardio-oefeningen hebben `kind: 'cardio'`: set-velden `min` en `lvl`
+   (niveau/helling), standaard 1 set, kolommen "min | niveau", "vorige keer" = "30 min · niveau 12".
+   Cables met `bar: true` tekenen een dikke stang (landmine, battle ropes; klasse `fig-barline`).
+   Catalogus v8: 165 oefeningen (gym 98). Catalogus v7 was: 147 oefeningen (gym 80 incl. apparaten voor armen/borst/rug/benen en ±32 bil; pilatesbord
    18; mat 13; dumbbell 28; kettlebell 8). De dumbbell-lijst van de gebruiker (sumo/goblet/Bulgarian squat,
    walking lunges, RDL, step-ups, (single-leg) hip thrust, crunches, weighted marches, plank drags, glute
    bridge met overhead stretch, alternating glute bridge, bicycle crunches, bent-over/single-arm/renegade
@@ -129,8 +134,8 @@ nooit het gewicht van de andere kant tonen. `+ Set` voegt een L+R-paar toe. In d
 - Dialogs: `openSheet(html)`, `choiceDialog(msg, choices)`, `confirmDialog()`, `hrDialog()` (gem./max HR, optioneel).
 - **Catalogus vs. db**: ingebouwde oefeningen staan in `CATALOG` (code), eigen oefeningen in
   `db.exercises`. Altijd opzoeken via `exById()` / `exercisesFor(program)`.
-- **Oefening-soorten (`kind`)**: `weights` (kg + reps), `reps` (alleen reps), `time` (seconden, met ▶ die de
-  timer als werk-timer start). Set-rij-layout hangt af van `kind`.
+- **Oefening-soorten (`kind`, lijst `KINDS`)**: `weights` (kg + reps), `reps` (alleen reps), `time`
+  (seconden, met ▶ die de timer als werk-timer start), `cardio` (minuten + niveau). Set-rij-layout hangt af van `kind`.
 - **Illustratie-engine** `figureSVG(poseKey, { animate })`: poppetje uit `POSES[key].frames`
   (2 keyframes; geanimeerd = SMIL heen-en-weer, statisch = frame B). Frames bouw je in data.js met
   `fr({ h, n, p, e, w, k, f, e2?, w2?, k2?, f2? })` (punten = [x,y]; ontbrekende 2e ledematen = 3px
@@ -252,6 +257,13 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v9 (2026-11-23)**: Basic-Fit compleet gemaakt: +45 oefeningen / +18 toestellen — machines (torso
+  rotation, multi-hip, pullover, decline press, staande leg curl, seated calf), plate-loaded (iso-lateral,
+  belt squat), rack/bank/optrekstang (bench press, front squat, overhead press, good morning, preacher,
+  decline sit-up, GHD, reverse hyper, pull-ups, dips, hanging leg raise), kabels & landmine (cable fly,
+  straight-arm pulldown, woodchopper, upright row, landmine squat/row/press), functioneel (deadlift,
+  barbell row, shrugs, farmer's walk, push-ups, ab wheel, Russian twist, wall balls, battle ropes) en
+  nieuwe zone Cardio (8 oefeningen, kind `cardio`). Cache v9.
 - **v8 (2026-11-23)**: Basic-Fit toestellen- & zonelijst (37 toestellen, alle gym-oefeningen gekoppeld,
   overzicht + "📍 toestel" in uitleg); 18 nieuwe gym-oefeningen: Kas glute bridge, lateral raise machine,
   lower back machine, plate-loaded chest/shoulder press, T-bar/high row, pendulum squat, back squat (rack),

@@ -30,6 +30,8 @@ const PROGRAMS = {
   kettlebell: { emoji: '🔔', label: 'Thuis met kettlebell' },
 };
 const SESSION_PROGRAMS = Object.keys(PROGRAMS);
+/** Soorten oefeningen: kg+reps, alleen reps, tijd (sec), cardio (minuten + niveau). */
+const KINDS = ['weights', 'reps', 'time', 'cardio'];
 const SIDE_WORD = { L: 'Links', R: 'Rechts' };
 /** "Linkerbeen", "Rechterarm", "Linkerkant" … */
 const sideLabel = (side, limb = 'kant') => `${side === 'L' ? 'Linker' : 'Rechter'}${limb}`;
@@ -64,11 +66,13 @@ function parseNum(v) {
 }
 function fmtSet(s, kind) {
   const side = s.side ? `${s.side} ` : '';
+  if (kind === 'cardio') return `${s.min ?? '–'} min${s.lvl != null ? ` · niveau ${fmtNum(s.lvl)}` : ''}`;
   if (kind === 'time' || (s.sec != null && s.reps == null)) return `${side}${s.sec ?? '–'} sec`;
   if (s.kg == null) return `${side}${s.reps ?? '–'} reps`;
   return `${side}${fmtNum(s.kg)} kg × ${s.reps ?? '–'}`;
 }
 function fmtSetShort(s, kind) {
+  if (kind === 'cardio') return `${s.min ?? '–'}′${s.lvl != null ? `/${fmtNum(s.lvl)}` : ''}`;
   if (kind === 'time') return `${s.sec ?? '–'}s`;
   if (s.kg == null) return `${s.reps ?? '–'}`;
   return `${fmtNum(s.kg)}×${s.reps ?? '–'}`;
@@ -130,13 +134,14 @@ function normSession(s, fallbackProgram = 'gym') {
       id: String(e.id || uid()),
       exerciseId: String(e.exerciseId || ''),
       name: String(e.name || ''),
-      kind: ['weights', 'reps', 'time'].includes(e.kind) ? e.kind : 'weights',
+      kind: KINDS.includes(e.kind) ? e.kind : 'weights',
       target: String(e.target ?? ''),
       targetSec: numOrNull(e.targetSec),
       alts: Array.isArray(e.alts) ? e.alts.map(String) : null,
       uni: ['been', 'arm', 'kant'].includes(e.uni) ? e.uni : null,
       sets: (Array.isArray(e.sets) ? e.sets : []).map((x) => ({
         kg: numOrNull(x.kg), reps: numOrNull(x.reps), sec: numOrNull(x.sec), done: !!x.done,
+        ...(numOrNull(x.min) != null ? { min: x.min } : {}), ...(numOrNull(x.lvl) != null ? { lvl: x.lvl } : {}),
         ...(x.side === 'L' || x.side === 'R' ? { side: x.side } : {}),
       })),
     })),
@@ -177,7 +182,7 @@ function normalizeDb(raw) {
   }
   exercises = exercises.map((e) => ({
     id: String(e.id), name: String(e.name),
-    kind: ['weights', 'reps', 'time'].includes(e.kind) ? e.kind : 'weights',
+    kind: KINDS.includes(e.kind) ? e.kind : 'weights',
     program: ['pilates', 'mat', 'gym', 'dumbbell', 'kettlebell'].includes(e.program) ? e.program : 'gym',
   }));
   templates = templates.map((t) => ({
@@ -343,6 +348,8 @@ function placeholderFor(entry, i, prev = findPrevious(entry.exerciseId)) {
   return {
     kg: above?.kg ?? p?.kg ?? null,
     reps: above?.reps ?? p?.reps ?? firstNum(entry.target),
+    min: above?.min ?? p?.min ?? (entry.kind === 'cardio' ? firstNum(entry.target) : null),
+    lvl: above?.lvl ?? p?.lvl ?? null,
     sec: above?.sec ?? p?.sec ?? entry.targetSec ?? null,
   };
 }
@@ -355,7 +362,7 @@ function newEntry(exerciseId, item = {}) {
   const uni = ex?.uni || null;
   // aantal sets per kant; bij eenzijdig worden het L/R-paren
   const prevCount = prev ? (uni ? Math.ceil(prev.sets.length / 2) : prev.sets.length) : null;
-  const n = item.sets ?? prevCount ?? DEFAULT_SETS;
+  const n = item.sets ?? prevCount ?? (ex?.kind === 'cardio' ? 1 : DEFAULT_SETS);
   return {
     id: uid(),
     exerciseId,
@@ -1014,6 +1021,7 @@ function renderEntry(entry) {
     : 'Eerste keer — succes! 💪';
   const kindCols = {
     weights: '<span>kg</span><span>reps</span><span></span>',
+    cardio: '<span>min</span><span>niveau</span><span></span>',
     reps: '<span>reps</span><span></span>',
     time: '<span>sec</span><span></span><span></span>',
   }[entry.kind];
@@ -1074,6 +1082,10 @@ function renderSet(entry, s, i, prev) {
     weights: kgInput + repsInput,
     reps: repsInput,
     time: `${secInput}<button class="play" data-action="work-timer" aria-label="Start ${ph.sec ?? ''} seconden">▶</button>`,
+    cardio: `<input class="num" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="next"
+      data-field="min" aria-label="Minuten" value="${s.min ?? ''}" placeholder="${ph.min ?? ''}">
+      <input class="num" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done"
+      data-field="lvl" aria-label="Niveau of helling" value="${fmtNum(s.lvl)}" placeholder="${fmtNum(ph.lvl)}">`,
   }[entry.kind];
   return `
     <div class="set-row k-${entry.kind} ${s.side ? `uni side-${s.side}` : ''} ${s.done ? 'done' : ''}" data-set="${i}">
@@ -1097,6 +1109,7 @@ const HOLD_SHAPES = {
   footplate: '<rect class="w-plate" x="2" y="-22" width="6" height="44" rx="2"/>',
   footplate45: '<rect class="w-plate" x="2" y="-22" width="6" height="44" rx="2" transform="rotate(-45)"/>',
   ball: '<circle class="w-plate" r="8"/><path class="w-hub" d="M-8,0 H8" stroke-width="1.5"/>',
+  wheel: '<circle class="w-plate" r="6"/><circle class="w-hub" r="2"/>',
   roller: '<circle class="eq" r="8"/><circle class="w-hub" r="2.5"/>',
 };
 
@@ -1151,7 +1164,7 @@ function figureSVG(key, { animate = true } = {}) {
   }
 
   const cords = (pose.cords || []).map((c) => line(c.from, c.to, 'fig-band')).join('');
-  const cables = (pose.cables || []).map((c) => line(c.from, c.to, 'fig-cable')).join('');
+  const cables = (pose.cables || []).map((c) => line(c.from, c.to, c.bar ? 'fig-barline' : 'fig-cable')).join('');
   const links = (pose.links || []).map(([p1, p2]) => {
     const a = `${at(A, p1).join(',')} ${at(A, p2).join(',')}`; const b = `${at(B, p1).join(',')} ${at(B, p2).join(',')}`;
     return `<polyline class="fig-band thick" points="${a}">${anim('points', a, b)}</polyline>`;
@@ -1393,6 +1406,7 @@ function addExerciseToWorkout(exerciseId) {
 }
 /** Hoofdspiergroep ("familie") uit het spier-label, bv. "Biceps & onderarm" → "Biceps". */
 const MUSCLE_FAMILIES = ['Achterkant schouders', 'Voorkant bovenbeen', 'Binnenkant bovenbeen', 'Heupbuigers',
+  'Conditie', 'Trapezius', 'Onderrug', 'Herstel',
   'Biceps', 'Triceps', 'Schouders', 'Rug', 'Borst', 'Bil', 'Hamstrings', 'Buik', 'Kuiten', 'Core', 'Zij-buik'];
 function muscleFamily(m) {
   if (!m) return null;
@@ -1702,7 +1716,11 @@ function toggleSet(entry, i) {
   const s = entry.sets[i];
   if (!s.done) {
     const ph = placeholderFor(entry, i);
-    if (entry.kind === 'time') {
+    if (entry.kind === 'cardio') {
+      if (s.min == null) s.min = ph.min;
+      if (s.lvl == null) s.lvl = ph.lvl;
+      if (s.min == null) { toast('Vul eerst het aantal minuten in'); return; }
+    } else if (entry.kind === 'time') {
       if (s.sec == null) s.sec = ph.sec;
       if (s.sec == null) { toast('Vul eerst het aantal seconden in'); return; }
     } else {
@@ -2421,7 +2439,8 @@ document.addEventListener('input', (e) => {
   const i = Number(el.closest('[data-set]')?.dataset.set);
   if (!entry || !entry.sets[i]) return;
   const n = parseNum(el.value);
-  entry.sets[i][field] = field !== 'kg' && n != null ? Math.round(n) : n;
+  // kg en niveau mogen decimalen hebben; reps, seconden en minuten worden hele getallen
+  entry.sets[i][field] = ['reps', 'sec', 'min'].includes(field) && n != null ? Math.round(n) : n;
   saveSoon();
 });
 
