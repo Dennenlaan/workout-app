@@ -89,6 +89,18 @@ nooit het gewicht van de andere kant tonen. `+ Set` voegt een L+R-paar toe. In d
 `side`-wissel → work R, met grote kant-badge.
 4. **Hartslag** (`view: 'heart'`): uitleg (geen live smartwatch-data in een PWA), profiel, zones, HR per sessie.
 
+## Feedback & vragen (geen server)
+- Ingangen: 💬-knop op het startscherm, kaart "📸 Apparaat of oefening mist?" onderaan Basic-Fit,
+  en "💬 Vraag of opmerking over deze oefening" in elk ⓘ-infoscherm (`data-action="feedback"`).
+- Formulier (`openFeedback` / `renderFeedbackSheet`): soort (apparaat toevoegen / vraag / iets werkt niet /
+  idee), onderwerp, bericht, optionele foto. "Versturen" = `navigator.share` (met foto als `files` waar
+  ondersteund) → WhatsApp/iMessage/mail; fallback `wa.me/?text=` (zonder nummer) of klembord.
+- **Bewust géén telefoonnummer/e-mailadres in de code** (repo is publiek). Het bericht komt bij de
+  beheerder binnen, die het in Claude Code plakt. Format van een binnengekomen bericht:
+  `💬 Workout-app feedback / Soort: … / Van: Mama|Senna / Apparaat/oefening: … / Bericht: … / (app vN · scherm · datum)`.
+  Bij "Apparaat/oefening toevoegen": oefening(en) met pose, `muscle`, tip, evt. `UNI` toevoegen én in `GYM_EQUIPMENT` zetten.
+- `APP_VERSION` in app.js staat in elk feedbackbericht: **gelijk houden met `CACHE` in sw.js**.
+
 ## Illustraties (100% offline, nooit leeg)
 - **Geen video-/gif-links meer** (verwijderd in v3). Elke catalogus-oefening heeft `pose` → ingebouwde
   SVG via `figureSVG()`; staat **links** van de oefening (`thumb()`), groot in het ⓘ-infoscherm.
@@ -257,6 +269,8 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v10 (2026-11-23)**: feedback/vragen vanuit de app via het deelmenu (WhatsApp/iMessage/mail), met
+  soort, onderwerp, bericht en foto; ingangen op startscherm, Basic-Fit en oefening-uitleg; `APP_VERSION`. Cache v10.
 - **v9 (2026-11-23)**: Basic-Fit compleet gemaakt: +45 oefeningen / +18 toestellen — machines (torso
   rotation, multi-hip, pullover, decline press, staande leg curl, seated calf), plate-loaded (iso-lateral,
   belt squat), rack/bank/optrekstang (bench press, front squat, overhead press, good morning, preacher,

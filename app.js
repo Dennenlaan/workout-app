@@ -6,6 +6,7 @@
    ========================================================= */
 
 /* ---------- Constants ---------- */
+const APP_VERSION = 'v10';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
 const STORAGE_KEY = 'workout-tracker:v1';          // legacy (vóór profielen) + prefix
 const TIMER_KEY = 'workout-tracker:timer';
 const PERSON_KEY = 'workout-tracker:person';       // laatst gekozen persoon
@@ -560,6 +561,7 @@ function renderHome() {
           ${personById(personId).emoji} ${esc(personById(personId).name)} <span class="muted">· wisselen ⇄</span>
         </button>
       </div>
+      <button class="icon-btn log-btn" data-action="feedback" aria-label="Feedback of vraag sturen"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg></button>
       <button class="icon-btn log-btn" data-action="go" data-view="log" aria-label="Geschiedenis & backup"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3 4.5v4h4"/><path d="M12 7.5V12l3 2"/></svg>${backupDue ? '<span class="icon-dot"></span>' : ''}</button>
     </header>
 
@@ -933,7 +935,12 @@ function renderGym() {
               </div>
             </div>`).join('')}
         </details>`).join('')}
-    </div>`;
+    </div>
+    <button class="create-card feedback-card" data-action="feedback" data-type="apparaat">
+      <span class="create-plus">📸</span>
+      <span><strong>Apparaat of oefening mist?</strong><br>
+      <span class="small">Stuur de naam (en een foto van het apparaat of het bordje erop), dan wordt het toegevoegd.</span></span>
+    </button>`;
 }
 
 /* ----- Hartslag ----- */
@@ -1367,7 +1374,98 @@ function openExerciseInfo(id) {
       ${ex.steps ? `<ol class="steps">${ex.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
       ${ex.tip ? `<p class="tip big-tip">💡 ${esc(ex.tip)}</p>` : ''}
       ${!ex.steps && !ex.tip ? '<p class="muted">Eigen oefening.</p>' : ''}
+      <button class="btn ghost block" data-action="feedback" data-type="vraag" data-subject="${esc(ex.name)}">💬 Vraag of opmerking over deze oefening</button>
     </div>`);
+}
+
+/* ---------- Feedback / vragen (via het deelmenu van de telefoon) ----------
+   Geen server: het bericht gaat via WhatsApp/iMessage/mail naar wie de app onderhoudt.
+   Er staat bewust géén telefoonnummer of e-mailadres in de (openbare) code. */
+const FEEDBACK_TYPES = {
+  apparaat: { label: '🏋️ Apparaat/oefening toevoegen', ask: 'Naam van het apparaat of de oefening' },
+  vraag: { label: '❓ Vraag', ask: 'Over welke oefening/onderdeel?' },
+  probleem: { label: '🐞 Iets werkt niet', ask: 'Waar ging het mis?' },
+  idee: { label: '💡 Idee', ask: 'Onderwerp' },
+};
+let feedback = { type: 'apparaat', subject: '', text: '', photo: null, photoUrl: null };
+
+function openFeedback({ type = 'apparaat', subject = '' } = {}) {
+  if (feedback.photoUrl) URL.revokeObjectURL(feedback.photoUrl);
+  feedback = { type: FEEDBACK_TYPES[type] ? type : 'apparaat', subject, text: '', photo: null, photoUrl: null };
+  renderFeedbackSheet();
+}
+
+function renderFeedbackSheet() {
+  const t = FEEDBACK_TYPES[feedback.type];
+  openSheet(`
+    <div class="sheet-inner feedback">
+      ${sheetHead('💬 Feedback of vraag')}
+      <p class="muted small">Je bericht gaat via WhatsApp, iMessage of mail naar wie de app bijhoudt.
+      Een apparaat dat mist wordt dan toegevoegd.</p>
+      <div class="chips">
+        ${Object.entries(FEEDBACK_TYPES).map(([k, v]) => `<button class="chip ${k === feedback.type ? 'on' : ''}" data-action="fb-type" data-type="${k}" aria-pressed="${k === feedback.type}">${v.label}</button>`).join('')}
+      </div>
+      <label class="label">${t.ask}
+        <input id="fb-subject" class="input" value="${esc(feedback.subject)}" maxlength="120" autocomplete="off"
+          placeholder="${feedback.type === 'apparaat' ? 'bv. Glute drive, Hammer Strength hip thrust…' : ''}">
+      </label>
+      <label class="label">Bericht
+        <textarea id="fb-text" class="input textarea" rows="4" maxlength="1000"
+          placeholder="${feedback.type === 'apparaat' ? 'Waar staat het, wat doe je erop? (mag kort)' : 'Typ je vraag of opmerking…'}">${esc(feedback.text)}</textarea>
+      </label>
+      <p class="label">Foto <span class="muted small">(optioneel, bv. van het apparaat of het bordje)</span></p>
+      ${feedback.photoUrl
+        ? `<div class="fb-photo"><img src="${feedback.photoUrl}" alt="Gekozen foto"><button class="btn small ghost danger" data-action="fb-remove-photo">Foto weghalen</button></div>`
+        : `<label class="btn block fb-photo-btn">📷 Foto maken of kiezen<input id="fb-photo" type="file" accept="image/*" hidden></label>`}
+      <div class="sheet-actions">
+        <button class="btn primary grow" data-action="fb-send">Versturen</button>
+      </div>
+      <div class="row fb-alt">
+        <button class="btn small ghost" data-action="fb-whatsapp">WhatsApp</button>
+        <button class="btn small ghost" data-action="fb-copy">Tekst kopiëren</button>
+      </div>
+    </div>`);
+}
+
+function feedbackMessage() {
+  const p = personById(personId);
+  const where = view === 'workout' && db.active ? `tijdens "${db.active.name}"` : `scherm: ${view}`;
+  return [
+    '💬 Workout-app feedback',
+    `Soort: ${FEEDBACK_TYPES[feedback.type].label.replace(/^\S+\s/, '')}`,
+    p ? `Van: ${p.name}` : null,
+    feedback.subject.trim() ? `${feedback.type === 'apparaat' ? 'Apparaat/oefening' : 'Over'}: ${feedback.subject.trim()}` : null,
+    feedback.text.trim() ? `Bericht: ${feedback.text.trim()}` : null,
+    feedback.photo ? '📷 Foto bijgevoegd' : null,
+    `(app ${APP_VERSION} · ${where} · ${new Date().toLocaleDateString('nl-NL')})`,
+  ].filter(Boolean).join('\n');
+}
+
+async function sendFeedback(channel) {
+  if (!feedback.subject.trim() && !feedback.text.trim()) { toast('Vul eerst iets in'); return; }
+  const text = feedbackMessage();
+  try {
+    if (channel === 'share' && navigator.share) {
+      const data = { title: 'Workout-app feedback', text };
+      if (feedback.photo && navigator.canShare?.({ files: [feedback.photo] })) data.files = [feedback.photo];
+      await navigator.share(data);
+      closeSheet();
+      toast(data.files || !feedback.photo ? 'Verstuurd 💗' : 'Verstuurd (stuur de foto er even los achteraan)');
+      return;
+    }
+    if (channel === 'whatsapp' || (channel === 'share' && !navigator.share)) {
+      // wa.me zonder nummer: WhatsApp vraagt zelf aan wie je het stuurt
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+      if (feedback.photo) toast('Stuur de foto er in WhatsApp even los achteraan');
+      return;
+    }
+    await navigator.clipboard.writeText(text);
+    toast('Gekopieerd — plak het in een bericht');
+  } catch (err) {
+    if (err?.name === 'AbortError') return; // gebruiker sloot het deelmenu
+    console.warn(err);
+    try { await navigator.clipboard.writeText(text); toast('Gekopieerd — plak het in een bericht'); } catch (_) { toast('Versturen lukte niet'); }
+  }
 }
 
 /* ---------- Oefening kiezen / wisselen ---------- */
@@ -2398,6 +2496,17 @@ async function handleAction(action, btn) {
     }
     case 'close-sheet': closeSheet(); break;
 
+    /* Feedback */
+    case 'feedback': openFeedback({ type: btn.dataset.type, subject: btn.dataset.subject || '' }); break;
+    case 'fb-type': feedback.type = btn.dataset.type; renderFeedbackSheet(); break;
+    case 'fb-remove-photo':
+      if (feedback.photoUrl) URL.revokeObjectURL(feedback.photoUrl);
+      feedback.photo = null; feedback.photoUrl = null; renderFeedbackSheet();
+      break;
+    case 'fb-send': sendFeedback('share'); break;
+    case 'fb-whatsapp': sendFeedback('whatsapp'); break;
+    case 'fb-copy': sendFeedback('copy'); break;
+
     /* Geschiedenis & backup */
     case 'delete-session':
       if (!(await confirmDialog('Deze training uit je geschiedenis verwijderen?', 'Verwijderen', true))) break;
@@ -2412,6 +2521,8 @@ async function handleAction(action, btn) {
 document.addEventListener('input', (e) => {
   const el = e.target;
   if (el.id === 'ex-search') { renderPickResults(el.value); return; }
+  if (el.id === 'fb-subject') { feedback.subject = el.value; return; }
+  if (el.id === 'fb-text') { feedback.text = el.value; return; }
   if (el.id === 'tpl-name') { editing.name = el.value; return; }
   if (el.id === 'tpl-search') { editing.q = el.value; renderTplPick(); return; }
   if (el.dataset.tplfield) {
@@ -2446,6 +2557,12 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('change', (e) => {
   const el = e.target;
+  if (el.id === 'fb-photo' && el.files?.[0]) {
+    feedback.photo = el.files[0];
+    feedback.photoUrl = URL.createObjectURL(el.files[0]);
+    renderFeedbackSheet();
+    return;
+  }
   if (el.id === 'rem-time' && /^\d{2}:\d{2}$/.test(el.value)) {
     db.run.reminder.time = el.value;
     db.run.reminder.lastNotified = null;
