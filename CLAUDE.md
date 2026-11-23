@@ -147,10 +147,15 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
   volledig offline bruikbaar.
 - Publiceren: repo (public, verplicht voor gratis Pages) → Settings → Pages → *Deploy from a branch*,
   branch `main`, map `/ (root)`.
+- **Live**: https://dennenlaan.github.io/workout-app/ (repo `Dennenlaan/workout-app`, public, Pages vanaf `main` / root).
 - **Git op deze pc**: alleen via GitHub Desktop (niet in PATH). Gebundelde git:
-  `$env:LOCALAPPDATA\GitHubDesktop\app-<versie>\resources\app\git\cmd\git.exe`. Pushen/publiceren
-  gaat via GitHub Desktop (die regelt de login). Repo-identiteit staat lokaal op het GitHub
-  **no-reply**-adres; commit nooit met het privé-mailadres (repo is publiek).
+  `$env:LOCALAPPDATA\GitHubDesktop\app-<versie>\resources\app\git\cmd\git.exe` (versiemap verandert
+  bij Desktop-updates → zoek opnieuw). Repo-identiteit staat lokaal op het GitHub **no-reply**-adres;
+  commit nooit met het privé-mailadres (repo is publiek).
+- **Pushen vanuit Claude Code werkt**: login staat in Windows Referentiebeheer via Git Credential Manager
+  (`credential.helper=manager`). De chat-shell blokkeert inlogvensters (`GIT_TERMINAL_PROMPT=0`,
+  `GCM_INTERACTIVE=never`); verloopt de login, laat de gebruiker in een gewoon PowerShell-venster
+  `…\git\ucrt64\bin\git-credential-manager.exe github login` draaien. Alternatief: *Push origin* in GitHub Desktop.
 - **Release-checklist**: (1) wijzig code, (2) verhoog `CACHE`-versie in `sw.js`, (3) upload gewijzigde
   bestanden, (4) op de telefoon: app openen, sluiten, opnieuw openen (stale-while-revalidate → 2e start is nieuw).
 - `localStorage` en Cache Storage zijn per origin (`<gebruiker>.github.io`), dus gedeeld met andere
