@@ -8,7 +8,15 @@ in de browser, geen backend, geen build-stap. UI-taal: **Nederlands**. Thema: **
 > ontwerpkeuze. Werk ook de "Changelog" onderaan bij.
 
 ## Productoverzicht
-**Beginpagina = profielkeuze** (`view: 'who'`): "Mama" 🌷 of "Senna" 🌸 (`PEOPLE` in app.js). Alle
+**Profielen beheren (v14)**: `PEOPLE` is niet meer vast maar staat in `localStorage['workout-tracker:people']`
+(standaard Mama `mama` + Senna `senna`; hun id's — en dus `dataKey` — blijven ongewijzigd). Per profiel:
+`{ id, name, emoji, heightCm, sex: 'vrouw'|'man'|'anders'|null, fatPct }` (`normPerson`). Beginpagina:
+✎ per kaart (`openPersonEditor`) en kaart "＋ Profiel toevoegen" (nieuw id `p-<uid>`, lege data). Verwijderen
+(alleen als er >1 profiel is) bewaart een kopie in `…:<id>:deleted-<ts>`. Ook bewerken via de geschiedenispagina
+("✎ Profiel bewerken"). Lengte → BMI bij Voortgang → Gewicht; vet% per weging (`weights[].fat`) → grafiek,
+weekgemiddelde vet%, vetvrije massa; de laatste vet% wordt ook in het profiel gezet.
+
+**Beginpagina = profielkeuze** (`view: 'who'`): standaard "Mama" 🌷 of "Senna" 🌸, uitbreidbaar. Alle
 voortgang (history, gewichten, **notities per oefening** (`db.notes`), eigen schema's, actieve sessie,
 instellingen, hartslagprofiel) staat **per persoon apart**. Wisselen via de chip "⇄ wisselen" onder de
 begroeting én via de profielknop rechtsboven op elke pagina (`personButton()` in `backHeader`).
@@ -207,6 +215,7 @@ nooit het gewicht van de andere kant tonen. `+ Set` voegt een L+R-paar toe. In d
 |---|---|
 | `workout-tracker:v1:mama`, `workout-tracker:v1:senna` | Volledige `db` per persoon (vorm hieronder). |
 | `workout-tracker:person` | Laatst gekozen persoon-id. |
+| `workout-tracker:people` | Lijst profielen met naam, emoji, lengte, geslacht, vet% (v14). |
 | `workout-tracker:timer` | Lopende rusttimer (gedeeld, wordt gestopt bij profielwissel). |
 | `workout-tracker:v1` | **Legacy** (vóór profielen). Bij data erin vraagt de profielkeuze eenmalig "Van wie zijn die?" en verplaatst het (`assignLegacy`); lege legacy wordt opgeruimd. Kopie blijft in `workout-tracker:v1:legacy-backup`. |
 | `…:<id>:before-import`, `…:<id>:corrupt-<ts>` | Veiligheidskopieën per persoon. |
@@ -239,7 +248,7 @@ Backup-export = data van de huidige persoon (`workout-backup-<persoon>-<datum>.j
                     // Pilates-speler: segs {type:'prep'|'work'|'rest', e (oefening-index), s (set-index), sec};
                     // een voorbij (of overgeslagen ⏭) work-segment zet die set op done (completeSeg).
   "settings": { "restSeconds": 90, "pilatesWork": 40, "pilatesSwitch": 15, "pilatesMinutes": 15 | null },
-  "body": { "weights": [ { "date": "2026-11-23", "kg": 65.8 } ],
+  "body": { "weights": [ { "date": "2026-11-23", "kg": 65.8, "fat": 24.5 /* optioneel */ } ],
             "measures": [ { "date": "2026-11-23", "values": { "taille": 70.5, "heupen": 99.5 } } ] },
   "notes": { "bf-bulgarian": "Bank op stand 3" },   // vaste notitie per oefening-id (per profiel)
   // sets kunnen een "side": "L" | "R" hebben (eenzijdige oefeningen); entries een "uni": "been"|"arm"|"kant"
@@ -323,6 +332,10 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v14 (2026-11-23)**: profielen toevoegen/bewerken/verwijderen (naam, icoon, lengte, geslacht, vet%);
+  vetpercentage per weging + BMI + vetvrije massa bij Voortgang; nieuwe oefening "Assisted pull-up machine –
+  bil-kickback (1 voet op kniepad)" (L/R, bij toestel Assisted pull-up/dip en als ⇄ bij kickbacks). Wensenlijst
+  (34 punten) automatisch geverifieerd; opstart-rooktest incl. derde profiel. Cache v14.
 - **v13 (2026-11-23)**: fix wit scherm bij openen met een openstaande training (v12: `timesDone` uit
   progress.js werd aangeroepen vóór dat bestand geladen was). Start nu na DOMContentLoaded, herstelscherm
   i.p.v. wit scherm bij elke render-fout, opstart-rooktest toegevoegd aan de release-checklist.

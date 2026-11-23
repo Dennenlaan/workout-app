@@ -232,13 +232,16 @@ function weeklyAverages() {
     const d = new Date(`${w.date}T12:00:00`);
     const ws = weekStart(d);
     const key = dateKey(ws);
-    const g = groups.get(key) || { start: ws, vals: [], ts: [] };
+    const g = groups.get(key) || { start: ws, vals: [], ts: [], fats: [] };
     g.vals.push(w.kg);
     g.ts.push(d.getTime());
+    if (w.fat != null) g.fats.push(w.fat);
     groups.set(key, g);
   }
+  const avg1 = (arr) => Math.round((arr.reduce((n, v) => n + v, 0) / arr.length) * 10) / 10;
   const weeks = [...groups.values()].sort((a, b) => a.start - b.start).map((g) => ({
-    start: g.start, avg: Math.round((g.vals.reduce((n, v) => n + v, 0) / g.vals.length) * 10) / 10, n: g.vals.length,
+    start: g.start, avg: avg1(g.vals), n: g.vals.length,
+    fatAvg: g.fats.length ? avg1(g.fats) : null,
     t: g.ts.reduce((n, v) => n + v, 0) / g.ts.length, // punt op de gemiddelde meetdatum (nooit in de toekomst)
   }));
   weeks.forEach((w, i) => { w.diff = i ? Math.round((w.avg - weeks[i - 1].avg) * 10) / 10 : null; });
@@ -251,16 +254,30 @@ function renderWeight() {
   const daily = ws.map((w) => ({ t: new Date(`${w.date}T12:00:00`).getTime(), v: w.kg }));
   const weekly = weeks.map((w) => ({ t: w.t, v: w.avg }));
   const range = (d) => { const e = new Date(d); e.setDate(e.getDate() + 6); return `${shortDate(d)} – ${shortDate(e)}`; };
+  const me = personById(personId);
+  const latest = ws[0];
+  const lastFat = ws.find((w) => w.fat != null)?.fat ?? me.fatPct;
+  const fatPts = ws.filter((w) => w.fat != null).map((w) => ({ t: new Date(`${w.date}T12:00:00`).getTime(), v: w.fat }));
+  const anyFat = weeks.some((w) => w.fatAvg != null);
+  const bmi = latest && me.heightCm ? Math.round((latest.kg / (me.heightCm / 100) ** 2) * 10) / 10 : null;
   return `
     <section class="card">
       <p class="label" style="margin-top:0">Gewicht invullen</p>
       <div class="row weigh-row">
         <input id="weight-date" class="input" type="date" value="${dateKey()}" max="${dateKey()}" aria-label="Datum">
-        <input id="weight-kg" class="input" inputmode="decimal" placeholder="${ws[0] ? fmtNum(ws[0].kg) : 'kg'}" aria-label="Gewicht in kg">
-        <button class="btn primary" data-action="weight-save">Opslaan</button>
+        <input id="weight-kg" class="input" inputmode="decimal" placeholder="${latest ? fmtNum(latest.kg) : 'kg'}" aria-label="Gewicht in kg">
+        <input id="weight-fat" class="input" inputmode="decimal" placeholder="vet %" aria-label="Vetpercentage (optioneel)">
       </div>
-      <p class="muted small note">Tip: weeg je op vaste momenten (bijv. 's ochtends na het opstaan). Het <strong>weekgemiddelde</strong> zegt meer dan één dag.</p>
+      <button class="btn primary block" data-action="weight-save">Opslaan</button>
+      <p class="muted small note">Tip: weeg je op vaste momenten (bijv. 's ochtends na het opstaan). Het <strong>weekgemiddelde</strong> zegt meer dan één dag. Vetpercentage (bv. van een slimme weegschaal) is optioneel.</p>
     </section>
+    ${latest && (bmi || lastFat != null) ? `
+      <section class="card body-stats">
+        ${bmi ? `<div><span class="muted small">BMI</span><strong>${fmtNum(bmi)}</strong><span class="muted tiny">bij ${me.heightCm} cm</span></div>` : ''}
+        ${lastFat != null ? `<div><span class="muted small">Vetpercentage</span><strong>${fmtNum(lastFat)}%</strong><span class="muted tiny">laatst gemeten</span></div>` : ''}
+        ${lastFat != null ? `<div><span class="muted small">Vetvrije massa</span><strong>${fmtNum(Math.round(latest.kg * (1 - lastFat / 100) * 10) / 10)} kg</strong><span class="muted tiny">spieren, botten, water</span></div>` : ''}
+      </section>` : ''}
+    ${!me.heightCm ? `<button class="btn ghost block" data-action="person-edit" data-person="${esc(personId)}">📏 Vul je lengte in voor je BMI</button>` : ''}
     ${weeks.length ? `
       <section class="card week-hero">
         <div><span class="muted small">Weekgemiddelde deze week</span><br>
@@ -273,19 +290,25 @@ function renderWeight() {
         { name: 'Per dag', points: daily, style: 'dots' },
       ].filter((s) => s.points.length) })}
     </section>
+    ${fatPts.length ? `
+      <section class="card chart-card">
+        ${lineChart({ unit: '%', title: 'Vetpercentage (%)', series: [{ name: 'Vetpercentage', points: fatPts, style: 'line' }] })}
+        ${fatPts.length >= 2 ? `<p class="trend">${trendText(fatPts, '%')}</p>` : ''}
+      </section>` : ''}
     ${weeks.length ? `
       <section class="card">
         <p class="label" style="margin-top:0">Weekgemiddelden</p>
-        <table class="data-table"><thead><tr><th>Week</th><th>Gem.</th><th>Verschil</th></tr></thead>
+        <table class="data-table"><thead><tr><th>Week</th><th>Gem.</th><th>Verschil</th>${anyFat ? '<th>Vet %</th>' : ''}</tr></thead>
         <tbody>${[...weeks].reverse().slice(0, 12).map((w) => `<tr><td>${range(w.start)}<br><span class="muted small">${plural(w.n, 'meting', 'metingen')}</span></td>
           <td><strong>${fmtNum(w.avg)} kg</strong></td>
-          <td>${w.diff == null ? '–' : signed(w.diff)}</td></tr>`).join('')}</tbody></table>
+          <td>${w.diff == null ? '–' : signed(w.diff)}</td>
+          ${anyFat ? `<td>${w.fatAvg != null ? `${fmtNum(w.fatAvg)}%` : '–'}</td>` : ''}</tr>`).join('')}</tbody></table>
       </section>` : ''}
     ${ws.length ? `
       <details class="card table-card">
         <summary>Alle metingen (${ws.length})</summary>
         <div class="list compact">${ws.slice(0, 60).map((w) => `
-          <div class="weigh-item"><span>${fmtDate(`${w.date}T12:00:00`)}</span><strong>${fmtNum(w.kg)} kg</strong>
+          <div class="weigh-item"><span>${fmtDate(`${w.date}T12:00:00`)}</span><strong>${fmtNum(w.kg)} kg${w.fat != null ? ` · ${fmtNum(w.fat)}%` : ''}</strong>
           <button class="icon-btn" data-action="weight-del" data-date="${w.date}" aria-label="Verwijder ${w.date}">✕</button></div>`).join('')}</div>
       </details>` : ''}`;
 }
@@ -294,12 +317,22 @@ function saveWeight() {
   const date = $('#weight-date').value || dateKey();
   const kg = parseNum($('#weight-kg').value);
   if (!kg || kg < 25 || kg > 300) { toast('Vul een geldig gewicht in (kg)'); return; }
+  const fatRaw = parseNum($('#weight-fat')?.value ?? '');
+  if (fatRaw != null && (fatRaw < 3 || fatRaw > 70)) { toast('Vetpercentage tussen 3 en 70%'); return; }
   const b = bodyData();
   b.weights = b.weights.filter((w) => w.date !== date);
-  b.weights.push({ date, kg: Math.round(kg * 10) / 10 });
+  const entry = { date, kg: Math.round(kg * 10) / 10 };
+  if (fatRaw != null) entry.fat = Math.round(fatRaw * 10) / 10;
+  b.weights.push(entry);
   b.weights.sort((a, c) => (a.date < c.date ? -1 : 1));
+  // laatste vetpercentage ook in het profiel zetten (zichtbaar bij "Profiel bewerken")
+  const latestFat = [...b.weights].reverse().find((w) => w.fat != null)?.fat;
+  if (latestFat != null) {
+    PEOPLE = PEOPLE.map((p) => (p.id === personId ? { ...p, fatPct: latestFat } : p));
+    savePeople();
+  }
   saveNow(); render();
-  toast(`${fmtNum(kg)} kg opgeslagen ✓`);
+  toast(`${fmtNum(kg)} kg${entry.fat != null ? ` · ${fmtNum(entry.fat)}%` : ''} opgeslagen ✓`);
 }
 
 /* ---------- Metingen in cm met lichaamsomtrek ---------- */

@@ -6,14 +6,41 @@
    ========================================================= */
 
 /* ---------- Constants ---------- */
-const APP_VERSION = 'v13';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
+const APP_VERSION = 'v14';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
 const STORAGE_KEY = 'workout-tracker:v1';          // legacy (vóór profielen) + prefix
 const TIMER_KEY = 'workout-tracker:timer';
 const PERSON_KEY = 'workout-tracker:person';       // laatst gekozen persoon
-const PEOPLE = [
+/* Profielen: standaard Mama + Senna, uit te breiden en te bewerken. De lijst (naam, emoji, persoonlijke
+   gegevens) staat in PEOPLE_KEY; alle trainingsdata per profiel in dataKey(id). */
+const PEOPLE_KEY = 'workout-tracker:people';
+const DEFAULT_PEOPLE = [
   { id: 'mama', name: 'Mama', emoji: '🌷' },
   { id: 'senna', name: 'Senna', emoji: '🌸' },
 ];
+const PERSON_EMOJIS = ['🌷', '🌸', '💗', '🌺', '🦋', '⭐', '🍀', '💪', '🔥', '🌻'];
+const SEXES = { vrouw: 'Vrouw', man: 'Man', anders: 'Anders' };
+function normPerson(p) {
+  const num = (v, lo, hi) => (typeof v === 'number' && v >= lo && v <= hi ? v : null);
+  return {
+    id: String(p.id),
+    name: String(p.name || 'Profiel').slice(0, 30),
+    emoji: PERSON_EMOJIS.includes(p.emoji) ? p.emoji : (p.emoji ? String(p.emoji).slice(0, 4) : '💗'),
+    heightCm: num(p.heightCm, 100, 230),
+    sex: SEXES[p.sex] ? p.sex : null,
+    fatPct: num(p.fatPct, 3, 70),
+  };
+}
+function loadPeople() {
+  try {
+    const list = JSON.parse(localStorage.getItem(PEOPLE_KEY));
+    if (Array.isArray(list) && list.length) return list.filter((x) => x && x.id && x.name).map(normPerson);
+  } catch (_) { /* kapot → standaard */ }
+  return DEFAULT_PEOPLE.map(normPerson);
+}
+function savePeople() {
+  try { localStorage.setItem(PEOPLE_KEY, JSON.stringify(PEOPLE)); } catch (_) { /* vol */ }
+}
+let PEOPLE = loadPeople();
 const dataKey = (pid) => `${STORAGE_KEY}:${pid}`;  // per persoon: workout-tracker:v1:<id>
 const personById = (pid) => PEOPLE.find((p) => p.id === pid);
 const SCHEMA_VERSION = 3;
@@ -219,7 +246,8 @@ function normalizeDb(raw) {
     profile: { ...base.profile, ...(raw.profile || {}) },
     body: {
       weights: (Array.isArray(raw.body?.weights) ? raw.body.weights : [])
-        .filter((w) => /^\d{4}-\d{2}-\d{2}$/.test(w?.date) && numOrNull(w.kg)).map((w) => ({ date: w.date, kg: w.kg })),
+        .filter((w) => /^\d{4}-\d{2}-\d{2}$/.test(w?.date) && numOrNull(w.kg))
+        .map((w) => ({ date: w.date, kg: w.kg, ...(numOrNull(w.fat) != null ? { fat: w.fat } : {}) })),
       measures: (Array.isArray(raw.body?.measures) ? raw.body.measures : [])
         .filter((m) => /^\d{4}-\d{2}-\d{2}$/.test(m?.date) && m.values && typeof m.values === 'object')
         .map((m) => ({ date: m.date, values: Object.fromEntries(Object.entries(m.values).filter(([, v]) => numOrNull(v) != null)) })),
@@ -576,13 +604,97 @@ function renderWho() {
         const sub = s.active ? `⏱ ${esc(s.active)} is nog bezig`
           : s.count ? `${plural(s.count, 'training', 'trainingen')} · laatst ${relDays(s.last)}` : 'Nog geen trainingen';
         return `
-          <button class="person-card ${p.id === last ? 'last' : ''}" data-action="pick-person" data-person="${p.id}">
-            <span class="person-emoji">${p.emoji}</span>
-            <span class="person-name">${esc(p.name)}</span>
-            <span class="person-sub">${sub}</span>
-          </button>`;
+          <div class="person-wrap">
+            <button class="person-card ${p.id === last ? 'last' : ''}" data-action="pick-person" data-person="${esc(p.id)}">
+              <span class="person-emoji">${p.emoji}</span>
+              <span class="person-name">${esc(p.name)}</span>
+              <span class="person-sub">${sub}</span>
+            </button>
+            <button class="person-edit" data-action="person-edit" data-person="${esc(p.id)}" aria-label="${esc(p.name)} bewerken">✎</button>
+          </div>`;
       }).join('')}
+      <button class="person-card add-person" data-action="person-new">
+        <span class="person-emoji">＋</span>
+        <span class="person-name">Profiel toevoegen</span>
+        <span class="person-sub">Voor iemand anders die meetraint</span>
+      </button>
     </div>`;
+}
+
+/** Korte regel met persoonlijke gegevens, bv. "Vrouw · 168 cm · 24% vet". */
+function profileLine(p) {
+  const parts = [p.sex ? SEXES[p.sex] : null, p.heightCm ? `${p.heightCm} cm` : null, p.fatPct != null ? `${fmtNum(p.fatPct)}% vet` : null].filter(Boolean);
+  return parts.length ? parts.join(' · ') : 'Nog geen persoonlijke gegevens ingevuld';
+}
+
+/* ----- Profiel bewerken / toevoegen ----- */
+let personDraft = null;
+function openPersonEditor(pid) {
+  const p = pid ? personById(pid) : null;
+  personDraft = p ? { ...p } : { id: null, name: '', emoji: PERSON_EMOJIS.find((e) => !PEOPLE.some((x) => x.emoji === e)) || '💗', heightCm: null, sex: null, fatPct: null };
+  renderPersonEditor();
+}
+function renderPersonEditor() {
+  const d = personDraft;
+  const age = d.id && d.id === personId ? db.profile?.age : null;
+  openSheet(`
+    <div class="sheet-inner person-editor">
+      ${sheetHead(d.id ? `✎ ${esc(d.name)} bewerken` : '＋ Nieuw profiel')}
+      <label class="label">Naam
+        <input id="pe-name" class="input" maxlength="30" value="${esc(d.name)}" placeholder="bv. Lisa" autocomplete="off">
+      </label>
+      <p class="label">Icoon</p>
+      <div class="chips">${PERSON_EMOJIS.map((e) => `<button class="chip emoji-chip ${d.emoji === e ? 'on' : ''}" data-action="pe-emoji" data-v="${e}" aria-label="Icoon ${e}">${e}</button>`).join('')}</div>
+      <p class="label">Geslacht <span class="muted small">(optioneel)</span></p>
+      <div class="chips">${Object.entries(SEXES).map(([k, v]) => `<button class="chip ${d.sex === k ? 'on' : ''}" data-action="pe-sex" data-v="${k}">${v}</button>`).join('')}</div>
+      <div class="form-grid two">
+        <label class="label">Lengte (cm)<input id="pe-height" class="input" inputmode="numeric" value="${d.heightCm ?? ''}" placeholder="bv. 168"></label>
+        <label class="label">Vetpercentage (%)<input id="pe-fat" class="input" inputmode="decimal" value="${d.fatPct != null ? fmtNum(d.fatPct) : ''}" placeholder="optioneel"></label>
+      </div>
+      ${age ? `<p class="muted small note">Leeftijd (voor hartslagzones): ${age} — aan te passen bij Hartslag.</p>` : ''}
+      <p class="muted small note">Lengte wordt gebruikt voor je BMI bij Voortgang → Gewicht. Vetpercentage kun je daar ook per weging bijhouden; de laatste waarde komt dan hier te staan.</p>
+      <div class="sheet-actions">
+        ${d.id && PEOPLE.length > 1 ? '<button class="btn ghost danger" data-action="pe-delete">Verwijder</button>' : ''}
+        <button class="btn primary grow" data-action="pe-save">${d.id ? 'Opslaan' : 'Profiel aanmaken'}</button>
+      </div>
+    </div>`);
+}
+function capturePersonDraft() {
+  if (!personDraft) return;
+  personDraft.name = $('#pe-name')?.value ?? personDraft.name;
+  const h = parseNum($('#pe-height')?.value ?? '');
+  personDraft.heightCm = h ? Math.round(h) : null;
+  const f = parseNum($('#pe-fat')?.value ?? '');
+  personDraft.fatPct = f != null && f > 0 ? Math.round(f * 10) / 10 : null;
+}
+function savePerson() {
+  capturePersonDraft();
+  const name = (personDraft.name || '').trim();
+  if (!name) { toast('Vul een naam in'); $('#pe-name')?.focus(); return; }
+  if (PEOPLE.some((p) => p.id !== personDraft.id && p.name.toLowerCase() === name.toLowerCase())) { toast('Die naam bestaat al'); return; }
+  const isNew = !personDraft.id;
+  const p = normPerson({ ...personDraft, id: personDraft.id || `p-${uid()}`, name });
+  if (isNew) PEOPLE.push(p); else PEOPLE = PEOPLE.map((x) => (x.id === p.id ? p : x));
+  savePeople();
+  closeSheet();
+  if (isNew) { selectPerson(p.id); toast(`Welkom ${p.name}! ${p.emoji}`); } else { render(); toast('Profiel opgeslagen ✓'); }
+}
+async function deletePerson() {
+  const p = personById(personDraft?.id);
+  if (!p || PEOPLE.length <= 1) return;
+  const ok = await confirmDialog(`Profiel "${p.name}" verwijderen, met alle trainingen, gewichten en metingen? Er wordt een veiligheidskopie op dit toestel bewaard.`, 'Verwijderen', true);
+  if (!ok) return;
+  try {
+    const raw = localStorage.getItem(dataKey(p.id));
+    if (raw) localStorage.setItem(`${dataKey(p.id)}:deleted-${Date.now()}`, raw);
+    localStorage.removeItem(dataKey(p.id));
+  } catch (_) { /* ignore */ }
+  PEOPLE = PEOPLE.filter((x) => x.id !== p.id);
+  savePeople();
+  closeSheet();
+  if (personId === p.id) { personId = null; db = defaultDb(); try { localStorage.removeItem(PERSON_KEY); } catch (_) { /* */ } }
+  view = 'who'; render();
+  toast(`${p.name} verwijderd`);
 }
 
 /* ----- Home ----- */
@@ -643,6 +755,13 @@ function renderLog() {
       <div class="row">
         <button class="btn" data-action="export">⬇︎ Exporteer backup (JSON)</button>
         <button class="btn" data-action="import">⬆︎ Importeer backup</button>
+      </div>
+    </section>
+    <section class="card profile-card">
+      <div class="profile-row">
+        <span class="person-emoji small">${personById(personId).emoji}</span>
+        <span class="grow"><strong>${esc(personById(personId).name)}</strong><br><span class="muted small">${profileLine(personById(personId))}</span></span>
+        <button class="btn small" data-action="person-edit" data-person="${esc(personId)}">✎ Profiel bewerken</button>
       </div>
     </section>
     <section class="card reset-card">
@@ -2645,6 +2764,12 @@ async function handleAction(action, btn) {
       break;
     }
     case 'pick-person': selectPerson(btn.dataset.person); break;
+    case 'person-new': openPersonEditor(null); break;
+    case 'person-edit': openPersonEditor(btn.dataset.person); break;
+    case 'pe-emoji': capturePersonDraft(); personDraft.emoji = btn.dataset.v; renderPersonEditor(); break;
+    case 'pe-sex': capturePersonDraft(); personDraft.sex = personDraft.sex === btn.dataset.v ? null : btn.dataset.v; renderPersonEditor(); break;
+    case 'pe-save': savePerson(); break;
+    case 'pe-delete': deletePerson(); break;
     case 'legacy-assign': {
       const p = personById(btn.dataset.person);
       if (!p || !(await confirmDialog(`De bestaande trainingen toewijzen aan ${p.name}?`, `Ja, van ${p.name}`))) break;

@@ -191,6 +191,12 @@ const POSES = {
   'g-slrdl': { holds: [{ at: 'w', t: 'db' }], dur: 3.2, frames: [
     fr({ h: [100, 22], n: [100, 36], p: [100, 72], e: [102, 54], w: [103, 70], k: [97, 98], f: [93, 121], k2: [101, 98], f2: [100, 124] }),
     fr({ h: [141, 55], n: [128, 60], p: [96, 72], e: [128, 75], w: [128, 90], k: [72, 72], f: [47, 70], k2: [101, 98], f2: [100, 124] })] },
+  /* ----- v14: assisted pull-up/dip-apparaat als bil-kickback (één voet op het kniepad) ----- */
+  'g-assistkick': { props: '<rect class="eq-line" x="122" y="4" width="6" height="120"/><rect class="eq" x="104" y="44" width="24" height="5" rx="2"/><rect class="eq" x="90" y="114" width="28" height="6" rx="2"/><rect class="eq-line" x="62" y="104" width="30" height="3" rx="1.5"/>',
+    holds: [{ at: 'f', t: 'pad', dy: 3 }, { at: 'w', t: 'grip' }], dur: 2.4, frames: [
+    fr({ h: [102, 16], n: [100, 30], p: [100, 66], e: [108, 40], w: [114, 46], k: [92, 92], f: [76, 82], k2: [99, 90], f2: [100, 114] }),
+    fr({ h: [104, 17], n: [101, 31], p: [100, 66], e: [108, 40], w: [114, 46], k: [88, 92], f: [70, 110], k2: [99, 90], f2: [100, 114] })] },
+
   /* ----- v9: complete Basic-Fit (machines, rack, kabels, functioneel, cardio) ----- */
   'g-rotary': { front: true, props: EQ.pad(88, 44, 24, 40) + EQ.pad(82, 84, 36, 7), holds: [{ at: 'w', t: 'grip' }], dur: 2.6, frames: [
     fr({ h: [100, 34], n: [100, 48], p: [100, 84], e: [92, 56], w: [100, 52], e2: [108, 56], w2: [100, 52], k: [93, 92], f: [93, 118], k2: [107, 92], f2: [107, 118] }),
@@ -469,7 +475,7 @@ const UNI = {
   'bf-band-walk': 'kant', 'bf-step-up': 'been', 'bf-smith-lunge': 'been', 'bf-donkey-kick': 'been', 'bf-b-stance-rdl': 'been',
   'bf-cable-lateral': 'arm', 'bf-db-kickback': 'arm',
   'bf-kneel-kickback': 'been',
-  'bf-multihip-kickback': 'been', 'bf-multihip-abduction': 'been', 'bf-standing-leg-curl': 'been',
+  'bf-multihip-kickback': 'been', 'bf-multihip-abduction': 'been', 'bf-standing-leg-curl': 'been', 'bf-assist-glute': 'been',
   'bf-iso-row': 'arm', 'bf-iso-chest': 'arm', 'bf-woodchop': 'kant', 'bf-landmine-press': 'arm',
   // Thuis
   'hd-lunge': 'been', 'hd-sl-rdl': 'been', 'hk-sl-rdl': 'been', 'hk-lunge': 'been', 'hk-row': 'arm', 'hk-press': 'arm',
@@ -801,6 +807,7 @@ const GYM_MUSCLES = {
   'bf-russian-twist': 'Buik (schuine buikspieren)', 'bf-wall-ball': 'Voorkant bovenbeen & schouders',
   'bf-battle-ropes': 'Conditie, schouders & core',
   'bf-tm-incline': 'Conditie & bil', 'bf-tm-run': 'Conditie', 'bf-crosstrainer': 'Conditie (hele lichaam)',
+  'bf-assist-glute': 'Bil (gluteus maximus)',
   'bf-bike': 'Conditie & bovenbenen', 'bf-recumbent': 'Conditie & bovenbenen', 'bf-rower': 'Conditie, rug & benen',
   'bf-stairs': 'Conditie & bil', 'bf-airbike': 'Conditie (hele lichaam)',
 };
@@ -828,7 +835,7 @@ const GYM_EQUIPMENT = [
     'Calf raise machine (staand / zittend)': ['bf-calf-raise', 'bf-seated-calf'],
     'Ab crunch machine': ['bf-ab-crunch'],
     'Lower back machine': ['bf-lowerback-machine'],
-    'Assisted pull-up / dip machine': ['bf-assisted-pullup', 'bf-dip-machine'],
+    'Assisted pull-up / dip machine': ['bf-assisted-pullup', 'bf-dip-machine', 'bf-assist-glute'],
   } },
   { zone: 'Plate-loaded apparaten (losse schijven)', emoji: '⚙️', items: {
     'Plate-loaded chest press (vlak / incline)': ['bf-pl-chest-press'],
@@ -891,7 +898,8 @@ const GYM_EXTRA_ALTS = {
   'bf-b-stance-rdl': ['bf-sl-rdl', 'bf-db-rdl'],
   'bf-leg-press': ['bf-lp-high', 'bf-sl-leg-press', 'bf-sl-leg-press-r', 'bf-lp-sl-high-L', 'bf-lp-sl-high-R',
     'bf-lp45-sl-L', 'bf-lp45-sl-R', 'bf-hack-squat', 'bf-smith-squat', 'bf-goblet-squat'],
-  'bf-glute-kickback-machine': ['bf-donkey-kick', 'bf-kneel-kickback'], 'bf-cable-kickback': ['bf-donkey-kick', 'bf-kneel-kickback'],
+  'bf-glute-kickback-machine': ['bf-donkey-kick', 'bf-kneel-kickback', 'bf-assist-glute'],
+  'bf-cable-kickback': ['bf-donkey-kick', 'bf-kneel-kickback', 'bf-assist-glute'],
   'bf-hammer-curl': ['bf-biceps-machine'], 'bf-cable-curl': ['bf-biceps-machine'],
   'bf-pushdown': ['bf-triceps-machine'], 'bf-oh-cable-ext': ['bf-triceps-machine'],
   'bf-chest-press': ['bf-incline-press', 'bf-pec-deck', 'bf-pl-chest-press', 'bf-db-bench-press'],
@@ -937,6 +945,9 @@ const GYM_EXERCISES = [
   { id: 'bf-lp45-sl-R', name: 'Schuin zittend 1 been voor de bilspier – Rechterbeen', pose: 'g-lp45-sl', side: 'R', tip: 'Schuine (45°) leg press. RECHTERvoet hoog en iets naar buiten op het platform; zak diep en duw via je hiel.', alts: ['bf-lp45-sl-L', 'bf-lp-sl-high-R'] },
   { id: 'bf-lat-pulldown', name: 'Lat pulldown', pose: 'g-pulldown', tip: 'Trek de stang naar je bovenborst, borst omhoog.', alts: ['bf-assisted-pullup'] },
   { id: 'bf-assisted-pullup', name: 'Assisted pull-up machine', pose: 'g-pulldown', tip: 'Meer gewicht = meer hulp.', alts: ['bf-lat-pulldown'] },
+  { id: 'bf-assist-glute', name: 'Assisted pull-up machine – bil-kickback (1 voet op kniepad)', pose: 'g-assistkick',
+    tip: 'Sta op de treden, handen aan de handgrepen. Zet één voet op het kniepad en duw het rustig omlaag en naar achteren tot je been gestrekt is; knijp je bil aan en laat langzaam terugkomen. Meer gewicht = zwaarder (andersom dan bij optrekken). Rug recht, niet doorzwaaien.',
+    alts: ['bf-glute-kickback-machine', 'bf-cable-kickback', 'bf-kneel-kickback', 'bf-donkey-kick'] },
   { id: 'bf-chest-press', name: 'Chest press machine', pose: 'g-chestpress', tip: 'Handgrepen op borsthoogte, schouderbladen naar achteren.', alts: ['bf-cable-chest-press'] },
   { id: 'bf-cable-chest-press', name: 'Chest press aan de kabel (staand)', pose: 'g-cablechest', tip: 'Stap naar voren, druk de handvatten voor je borst uit.', alts: ['bf-chest-press'] },
   { id: 'bf-seated-row', name: 'Seated row (kabel)', pose: 'g-seatedrow', tip: 'Rechte rug, trek naar je navel, schouderbladen samen.' },
