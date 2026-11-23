@@ -6,7 +6,7 @@
    ========================================================= */
 
 /* ---------- Constants ---------- */
-const APP_VERSION = 'v11';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
+const APP_VERSION = 'v12';                          // houd gelijk met CACHE in sw.js (staat in feedbackberichten)
 const STORAGE_KEY = 'workout-tracker:v1';          // legacy (vóór profielen) + prefix
 const TIMER_KEY = 'workout-tracker:timer';
 const PERSON_KEY = 'workout-tracker:person';       // laatst gekozen persoon
@@ -117,6 +117,7 @@ function defaultDb() {
     run: { reminder: { days: [0, 2, 5], time: '19:00', notify: false, lastNotified: null } },
     profile: { age: null, restHr: null, maxHr: null },
     notes: {},           // vaste notitie per oefening-id (bv. "stoel op stand 4")
+    body: { weights: [], measures: [] }, // lichaamsgewicht per dag + cm-metingen
     lastBackupAt: null,
   };
 }
@@ -185,6 +186,10 @@ function normalizeDb(raw) {
     id: String(e.id), name: String(e.name),
     kind: KINDS.includes(e.kind) ? e.kind : 'weights',
     program: ['pilates', 'mat', 'gym', 'dumbbell', 'kettlebell'].includes(e.program) ? e.program : 'gym',
+    ...(e.muscle ? { muscle: String(e.muscle).slice(0, 60) } : {}),
+    ...(['been', 'arm', 'kant'].includes(e.uni) ? { uni: e.uni } : {}),
+    ...(e.toestel ? { toestel: String(e.toestel).slice(0, 80) } : {}),
+    ...(e.tip ? { tip: String(e.tip).slice(0, 300) } : {}),
   }));
   templates = templates.map((t) => ({
     id: String(t.id), name: String(t.name), program: 'gym', note: t.note ? String(t.note) : '',
@@ -212,6 +217,13 @@ function normalizeDb(raw) {
       lastNotified: rem.lastNotified || null,
     } },
     profile: { ...base.profile, ...(raw.profile || {}) },
+    body: {
+      weights: (Array.isArray(raw.body?.weights) ? raw.body.weights : [])
+        .filter((w) => /^\d{4}-\d{2}-\d{2}$/.test(w?.date) && numOrNull(w.kg)).map((w) => ({ date: w.date, kg: w.kg })),
+      measures: (Array.isArray(raw.body?.measures) ? raw.body.measures : [])
+        .filter((m) => /^\d{4}-\d{2}-\d{2}$/.test(m?.date) && m.values && typeof m.values === 'object')
+        .map((m) => ({ date: m.date, values: Object.fromEntries(Object.entries(m.values).filter(([, v]) => numOrNull(v) != null)) })),
+    },
     notes: raw.notes && typeof raw.notes === 'object'
       ? Object.fromEntries(Object.entries(raw.notes).filter(([, v]) => typeof v === 'string' && v.trim()).map(([k, v]) => [k, v.slice(0, 300)]))
       : {},
@@ -462,6 +474,7 @@ function render() {
   const renderers = {
     who: renderWho, home: renderHome, run: renderRun, thuis: renderThuis, pilates: renderPilates, mat: renderPilates,
     dumbbell: renderHomeWeights, kettlebell: renderHomeWeights, gym: renderGym, heart: renderHeart, log: renderLog,
+    progress: () => renderProgress(), // staat in progress.js (laadt na app.js)
   };
   app.innerHTML = view === 'workout'
     ? (timed ? (isPlayer ? renderPlayer() : renderRunSession()) : renderWorkout())
@@ -577,6 +590,17 @@ function renderHome() {
       ${programCard('run', 'Hardloopschema', next ? `${doneCount}/30 · volgende: ${runTitle(next)}` : 'Schema afgerond! 🎉', doneCount / 30)}
       ${programCard('thuis', 'Thuis trainen', lastHome ? `Laatst: ${esc(lastHome.name)} · ${relDays(lastHome.startedAt)}` : 'Pilates (bord/matje) · dumbbell · kettlebell')}
       ${programCard('gym', 'Basic-Fit', lastGym ? `Laatst: ${esc(lastGym.name)} · ${relDays(lastGym.startedAt)}` : 'Armen · Full Body · Bil 1–3')}
+    </div>
+
+    <div class="home-actions">
+      <button class="action-card add" data-action="add-own">
+        <span class="action-icon">➕</span>
+        <span><strong>Apparaat of oefening toevoegen</strong><span class="small">Zelf toevoegen of laten toevoegen met foto</span></span>
+      </button>
+      <button class="action-card progress" data-action="go" data-view="progress">
+        <span class="action-icon">📈</span>
+        <span><strong>Voortgang</strong><span class="small">Grafieken, gewicht &amp; metingen</span></span>
+      </button>
     </div>`;
 }
 
@@ -823,13 +847,43 @@ const exGrid = (list) => `
 /* ----- Pilates met bord / op matje (volledig-scherm speler) ----- */
 function renderPilates() {
   const prog = PLAYER_PROGRAMS[view];
+  const minutes = pilatesMinutes();
+  const custom = minutes && ![10, 15, 20, 30].includes(minutes);
   return `
     ${backHeader(prog.title, prog.sub, 'thuis')}
-    <p class="intro">Kies je niveau: de training start op <strong>volledig scherm</strong> en schakelt vanzelf door.
-    Tussen oefeningen krijg je een <strong>wisselmoment</strong> met aftellen en piepjes; bij eenzijdige oefeningen
-    eerst links, dan rechts.</p>
-    <section class="card setting">
-      <p class="label">Tijd per set <span class="muted small">(herhalingsoefeningen)</span></p>
+    <section class="card setting duration-card">
+      <p class="label">1. Hoelang wil je trainen?</p>
+      <div class="chips duration-chips">
+        ${[10, 15, 20, 30].map((mn) => `<button class="chip big-chip ${minutes === mn ? 'on' : ''}" data-action="pilates-minutes" data-min="${mn}" aria-pressed="${minutes === mn}">${mn} min</button>`).join('')}
+        <button class="chip big-chip ${!minutes ? 'on' : ''}" data-action="pilates-minutes" data-min="full" aria-pressed="${!minutes}">Volledig</button>
+      </div>
+      <label class="custom-min">Eigen tijd
+        <input id="pilates-custom-min" class="input" type="number" inputmode="numeric" min="5" max="90" step="1"
+          value="${custom ? minutes : ''}" placeholder="bv. 25"> min
+      </label>
+      <p class="muted small note">${minutes
+        ? `De app stelt zelf een schema van <strong>${minutes} minuten</strong> samen (oefeningen, sets en werktijd), inclusief rust en wisselmomenten.`
+        : 'Volledig = het complete niveau-schema, zonder tijdslimiet.'}</p>
+    </section>
+    <p class="label">2. Kies je niveau <span class="muted small">— start op volledig scherm, schakelt vanzelf door</span></p>
+    <div class="list">
+      ${prog.levels.map((base) => {
+        const l = minutes ? buildTimedLevel(view, base.id, minutes) : base;
+        const entries = l.items.map((it) => newEntry(it.exerciseId, it));
+        const total = segsTotal(buildPlayerSegs(l, entries));
+        const sets = Math.max(...l.items.map((i) => i.sets));
+        return `
+        <button class="card level" data-action="start-pilates" data-program="${view}" data-id="${base.id}">
+          <span class="level-head"><span class="pc-emoji">${base.emoji}</span><span class="grow"><span class="pc-title">${base.name}</span>
+          <span class="pc-sub">${minutes ? `${fmtClock(total)} min · ${plural(l.items.length, 'oefening', 'oefeningen')} · ${plural(sets, 'set', 'sets')} · ${l.workSec || pilatesWork()} s per set`
+            : `${esc(base.desc)} ± ${Math.round(total / 60)} min`} · rust ${base.rest} s</span></span><span class="chev">▶</span></span>
+          <span class="level-ex">${l.items.map((it) => esc(exName(it.exerciseId))).join(' · ')}</span>
+        </button>`;
+      }).join('')}
+    </div>
+    <details class="card setting">
+      <summary class="label" style="margin:0">⚙️ Instellingen: werktijd & wisseltijd</summary>
+      <p class="label">Tijd per set <span class="muted small">(bij "Volledig"; bij een gekozen tijd rekent de app zelf)</span></p>
       <div class="chips">
         ${[30, 40, 50, 60].map((s) => `<button class="chip ${pilatesWork() === s ? 'on' : ''}" data-action="pilates-work" data-sec="${s}" aria-pressed="${pilatesWork() === s}">${s} sec</button>`).join('')}
       </div>
@@ -837,20 +891,7 @@ function renderPilates() {
       <div class="chips">
         ${[10, 15, 20, 30].map((s) => `<button class="chip ${pilatesSwitch() === s ? 'on' : ''}" data-action="pilates-switch" data-sec="${s}" aria-pressed="${pilatesSwitch() === s}">${s} sec</button>`).join('')}
       </div>
-      <p class="muted small note">Plank en hundred gebruiken hun eigen tijd. Rust tussen sets hangt af van het niveau.</p>
-    </section>
-    <div class="list">
-      ${prog.levels.map((l) => {
-        const segs = buildPlayerSegs(l, l.items.map((it) => newEntry(it.exerciseId, it)));
-        const mins = Math.round(segs.reduce((n, s) => n + s.sec, 0) / 60);
-        return `
-        <button class="card level" data-action="start-pilates" data-program="${view}" data-id="${l.id}">
-          <span class="level-head"><span class="pc-emoji">${l.emoji}</span><span class="grow"><span class="pc-title">${l.name}</span>
-          <span class="pc-sub">${esc(l.desc)} ± ${mins} min · rust ${l.rest} sec</span></span><span class="chev">▶</span></span>
-          <span class="level-ex">${l.items.map((it) => esc(exName(it.exerciseId))).join(' · ')}</span>
-        </button>`;
-      }).join('')}
-    </div>
+    </details>
     <h2>Alle oefeningen</h2>
     ${exGrid(prog.exercises)}`;
 }
@@ -879,6 +920,15 @@ function renderHomeWeights() {
 
 /* ----- Basic-Fit ----- */
 const isOwnTemplate = (t) => !BUILTIN_TEMPLATE_IDS.includes(t.id);
+
+/** Vaste zones + (als die er zijn) een zone met zelf toegevoegde Basic-Fit-apparaten van dit profiel. */
+function gymZones() {
+  const own = db.exercises.filter((e) => e.program === 'gym');
+  if (!own.length) return GYM_EQUIPMENT;
+  const items = {};
+  for (const e of own) (items[e.toestel || 'Overig'] ||= []).push(e.id);
+  return [...GYM_EQUIPMENT, { zone: 'Zelf toegevoegd', emoji: '⭐', items }];
+}
 
 function tplCard(t) {
   const own = isOwnTemplate(t);
@@ -919,7 +969,7 @@ function renderGym() {
     <p class="muted small">Alle Basic-Fit toestellen met de oefeningen die je erop kunt doen. Tik op een oefening voor uitleg.
     Is een toestel bezet? Gebruik ⇄ Wissel in je workout.</p>
     <div class="list">
-      ${GYM_EQUIPMENT.map((z) => `
+      ${gymZones().map((z) => `
         <details class="card zone-card">
           <summary><span class="zone-emoji">${z.emoji}</span><span class="grow"><strong>${esc(z.zone)}</strong><br>
             <span class="muted small">${plural(Object.keys(z.items).length, 'toestel', 'toestellen')} · ${Object.values(z.items).flat().length} oefeningen</span></span><span class="chev">›</span></summary>
@@ -1052,6 +1102,7 @@ function renderEntry(entry) {
           ${entry.target ? `<p class="target">🎯 ${setsPerSide(entry)} × ${esc(entry.target)}</p>` : ''}
           <div class="ex-actions">
             <button class="chip small-chip" data-action="ex-info" data-id="${esc(entry.exerciseId)}">ⓘ Uitleg</button>
+            ${timesDone(entry.exerciseId) >= 2 ? `<button class="chip small-chip" data-action="progress-ex" data-id="${esc(entry.exerciseId)}">📈 Voortgang</button>` : ''}
             ${swapOptions(entry).all.length ? `<button class="chip small-chip" data-action="swap">⇄ Wissel</button>` : ''}
           </div>
         </div>
@@ -1373,13 +1424,84 @@ function openExerciseInfo(id) {
       ${ex.muscle ? `<p class="center"><span class="muscle-pill">💪 Traint vooral: ${esc(ex.muscle)}</span></p>` : ''}
       ${ex.side ? `<p class="center"><span class="side-pill side-${ex.side}">${ex.side === 'L' ? '⬅ Linkerbeen' : 'Rechterbeen ➡'}</span></p>` : ''}
       ${ex.uni ? `<p class="muted small center">↔ Eenzijdig: per set eerst ${sideLabel('L', ex.uni)}, dan ${sideLabel('R', ex.uni)}</p>` : ''}
-      ${EQUIPMENT_OF[id] ? `<p class="muted small center">📍 ${esc(EQUIPMENT_OF[id].toestel)} · ${esc(EQUIPMENT_OF[id].zone)}</p>` : ''}
+      ${EQUIPMENT_OF[id] ? `<p class="muted small center">📍 ${esc(EQUIPMENT_OF[id].toestel)} · ${esc(EQUIPMENT_OF[id].zone)}</p>`
+        : ex.toestel ? `<p class="muted small center">📍 ${esc(ex.toestel)} · zelf toegevoegd</p>` : ''}
+      ${timesDone(id) >= 2 ? `<button class="btn ghost block" data-action="progress-ex" data-id="${esc(id)}">📈 Bekijk je voortgang</button>` : ''}
       ${ex.equipment ? `<p class="muted small center">🧰 ${esc(ex.equipment)}</p>` : ''}
       ${ex.steps ? `<ol class="steps">${ex.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
       ${ex.tip ? `<p class="tip big-tip">💡 ${esc(ex.tip)}</p>` : ''}
       ${!ex.steps && !ex.tip ? '<p class="muted">Eigen oefening.</p>' : ''}
       <button class="btn ghost block" data-action="feedback" data-type="vraag" data-subject="${esc(ex.name)}">💬 Vraag of opmerking over deze oefening</button>
     </div>`);
+}
+
+/* ---------- Zelf een apparaat/oefening toevoegen (per profiel, in db.exercises) ---------- */
+const OWN_PROGRAMS = { gym: 'Basic-Fit', dumbbell: 'Thuis met dumbbell', kettlebell: 'Thuis met kettlebell' };
+const OWN_KINDS = { weights: 'kg + reps', reps: 'alleen reps', time: 'tijd (sec)', cardio: 'cardio (min)' };
+const OWN_MUSCLES = ['Bil (gluteus maximus)', 'Bil (gluteus medius)', 'Bil (gluteus minimus)', 'Hamstrings', 'Voorkant bovenbeen',
+  'Binnenkant bovenbeen', 'Kuiten', 'Rug', 'Borst', 'Schouders', 'Biceps', 'Triceps', 'Buik', 'Core', 'Conditie'];
+let ownDraft = null;
+
+function openAddOwn() {
+  ownDraft = { program: 'gym', kind: 'weights', uni: false };
+  renderAddOwn();
+}
+function renderAddOwn() {
+  const mine = db.exercises.filter((e) => OWN_PROGRAMS[e.program]);
+  openSheet(`
+    <div class="sheet-inner add-own">
+      ${sheetHead('➕ Apparaat of oefening toevoegen')}
+      <button class="create-card feedback-card" data-action="feedback" data-type="apparaat">
+        <span class="create-plus">📸</span>
+        <span><strong>Laten toevoegen (met foto)</strong><br><span class="small">Stuur naam + foto; dan komt er een tekening, tip en spiergroep bij.</span></span>
+      </button>
+      <p class="label">Of zelf direct toevoegen</p>
+      <label class="label">Naam van de oefening
+        <input id="own-name" class="input" maxlength="80" placeholder="bv. Glute drive" autocomplete="off" value="${esc(ownDraft.name || '')}">
+      </label>
+      <p class="label">Waar?</p>
+      <div class="chips">${Object.entries(OWN_PROGRAMS).map(([k, v]) => `<button class="chip ${ownDraft.program === k ? 'on' : ''}" data-action="own-prog" data-v="${k}">${v}</button>`).join('')}</div>
+      ${ownDraft.program === 'gym' ? `<label class="label">Toestel <span class="muted small">(optioneel)</span>
+        <input id="own-toestel" class="input" maxlength="80" placeholder="bv. Hammer Strength glute drive" autocomplete="off" value="${esc(ownDraft.toestel || '')}">
+      </label>` : ''}
+      <label class="label">Spiergroep
+        <select id="own-muscle" class="input">${OWN_MUSCLES.map((mu) => `<option ${ownDraft.muscle === mu ? 'selected' : ''}>${mu}</option>`).join('')}</select>
+      </label>
+      <p class="label">Wat vul je in?</p>
+      <div class="chips">${Object.entries(OWN_KINDS).map(([k, v]) => `<button class="chip ${ownDraft.kind === k ? 'on' : ''}" data-action="own-kind" data-v="${k}">${v}</button>`).join('')}</div>
+      <label class="check-line"><input id="own-uni" type="checkbox" ${ownDraft.uni ? 'checked' : ''}> Eenzijdig (per set Linkerbeen en Rechterbeen)</label>
+      <label class="label">Tip <span class="muted small">(optioneel)</span>
+        <input id="own-tip" class="input" maxlength="300" placeholder="bv. stoel op stand 4, voeten hoog" autocomplete="off" value="${esc(ownDraft.tip || '')}">
+      </label>
+      <div class="sheet-actions"><button class="btn primary grow" data-action="own-save">Toevoegen</button></div>
+      ${mine.length ? `<p class="label">Zelf toegevoegd (${mine.length})</p>
+        <div class="list compact">${mine.map((e) => `
+          <div class="own-item"><span class="grow"><strong>${esc(e.name)}</strong><br><span class="muted tiny">${esc(OWN_PROGRAMS[e.program])}${e.toestel ? ` · ${esc(e.toestel)}` : ''}${e.muscle ? ` · ${esc(e.muscle)}` : ''}</span></span>
+          <button class="icon-btn" data-action="own-del" data-id="${esc(e.id)}" aria-label="Verwijder ${esc(e.name)}">🗑</button></div>`).join('')}</div>` : ''}
+    </div>`);
+}
+function captureOwnDraft() {
+  if (!ownDraft) return;
+  ownDraft.name = $('#own-name')?.value ?? ownDraft.name;
+  ownDraft.toestel = $('#own-toestel')?.value ?? ownDraft.toestel;
+  ownDraft.muscle = $('#own-muscle')?.value ?? ownDraft.muscle;
+  ownDraft.uni = $('#own-uni')?.checked ?? ownDraft.uni;
+  ownDraft.tip = $('#own-tip')?.value ?? ownDraft.tip;
+}
+function saveOwnExercise() {
+  captureOwnDraft();
+  const name = (ownDraft.name || '').trim().replace(/\s+/g, ' ');
+  if (!name) { toast('Geef de oefening een naam'); $('#own-name')?.focus(); return; }
+  if (exercisesFor(ownDraft.program).some((e) => e.name.toLowerCase() === name.toLowerCase())) { toast('Die bestaat al — zoek hem op bij "Oefening toevoegen"'); return; }
+  const ex = { id: `ex-${uid()}`, name, kind: ownDraft.kind, program: ownDraft.program, muscle: ownDraft.muscle };
+  if (ownDraft.uni) ex.uni = 'been';
+  if (ownDraft.program === 'gym' && ownDraft.toestel?.trim()) ex.toestel = ownDraft.toestel.trim();
+  if (ownDraft.tip?.trim()) ex.tip = ownDraft.tip.trim();
+  db.exercises.push(ex);
+  saveNow();
+  ownDraft = { program: ownDraft.program, kind: 'weights', uni: false };
+  renderAddOwn();
+  toast(`"${name}" toegevoegd ✓ — kies hem bij een workout of in je eigen schema`);
 }
 
 /* ---------- Feedback / vragen (via het deelmenu van de telefoon) ----------
@@ -1678,16 +1800,70 @@ function buildPlayerSegs(level, exercises) {
     if (ei > 0) segs.push({ type: 'switch', e: ei, sec: pilatesSwitch() });
     e.sets.forEach((set, si) => {
       if (si > 0) segs.push(set.side === 'R' ? { type: 'side', e: ei, s: si, sec: SIDE_SEC } : { type: 'rest', e: ei, s: si, sec: level.rest });
-      segs.push({ type: 'work', e: ei, s: si, side: set.side || null, sec: e.kind === 'time' ? (e.targetSec || 30) : pilatesWork() });
+      segs.push({ type: 'work', e: ei, s: si, side: set.side || null, sec: e.kind === 'time' ? (e.targetSec || 30) : (level.workSec || pilatesWork()) });
     });
   });
   return segs;
 }
 
 /** Start een niveau (pilates met bord of op matje) als volledig-scherm speler die automatisch doorschakelt. */
+const pilatesMinutes = () => db.settings.pilatesMinutes ?? null; // null = volledig niveau
+const segsTotal = (segs) => segs.reduce((n, s) => n + s.sec, 0);
+
+/**
+ * Stel een schema samen dat op de gekozen tijd uitkomt.
+ * Intensiteit (rust, oefeningvolgorde) komt van het niveau; bij langere tijd worden extra oefeningen
+ * uit hetzelfde programma aangevuld. Daarna wordt de werktijd per set (20–75 s) bijgesteld zodat het
+ * totaal (incl. klaarmaken, rust, kant- en houdingwissels) zo dicht mogelijk bij de doeltijd komt.
+ */
+function buildTimedLevel(programKey, levelId, minutes) {
+  const prog = PLAYER_PROGRAMS[programKey];
+  const base = prog.levels.find((l) => l.id === levelId);
+  const T = Math.max(5, Math.min(90, minutes)) * 60;
+  const itemOf = new Map(base.items.map((i) => [i.exerciseId, i]));
+  const pool = [...base.items.map((i) => i.exerciseId), ...prog.exercises.map((e) => e.id).filter((id) => !itemOf.has(id))];
+  const mkItem = (id, sets) => {
+    const it = itemOf.get(id); const ex = exById(id);
+    return ex.kind === 'time'
+      ? { exerciseId: id, sets, sec: it?.sec ?? 30 }
+      : { exerciseId: id, sets, reps: it?.reps ?? 10, perSide: !!(it?.perSide || ex.uni) };
+  };
+  const measure = (items, work) => segsTotal(buildPlayerSegs({ rest: base.rest, workSec: work }, items.map((i) => newEntry(i.exerciseId, i))));
+  const baseWork = pilatesWork();
+  let sets = minutes <= 12 ? 1 : minutes <= 22 ? 2 : 3;
+  let chosen = [];
+  for (;;) {
+    chosen = [];
+    for (const id of pool) {
+      const cand = [...chosen, mkItem(id, sets)];
+      if (measure(cand, baseWork) <= T) chosen = cand;
+    }
+    // alle oefeningen gebruikt en nog tijd over (lange training)? → een set erbij
+    if (chosen.length === pool.length && sets < 5 && measure(chosen, 75) < T) { sets += 1; continue; }
+    if (chosen.length >= 3 || sets === 1) break;
+    sets -= 1;
+  }
+  if (!chosen.length) chosen = [mkItem(pool[0], 1)];
+  // werktijd bijstellen zodat het precies uitkomt
+  const entries = chosen.map((i) => newEntry(i.exerciseId, i));
+  const repWorkSegs = buildPlayerSegs({ rest: base.rest, workSec: baseWork }, entries)
+    .filter((s) => s.type === 'work' && entries[s.e].kind !== 'time').length;
+  let work = baseWork;
+  if (repWorkSegs) {
+    // probeer werktijden 20–75 s (stappen van 5) en kies de waarde die het dichtst bij de doeltijd uitkomt
+    let best = Infinity;
+    for (let w = 20; w <= 75; w += 5) {
+      const diff = Math.abs(measure(chosen, w) - T);
+      if (diff < best) { best = diff; work = w; }
+    }
+  }
+  return { ...base, id: `${base.id}-${minutes}m`, workSec: work, items: chosen, minutes };
+}
+
 async function startPilates(levelId, programKey = 'pilates') {
   const prog = PLAYER_PROGRAMS[programKey] || PLAYER_PROGRAMS.pilates;
-  const l = prog.levels.find((x) => x.id === levelId);
+  const minutes = pilatesMinutes();
+  const l = minutes ? buildTimedLevel(programKey, levelId, minutes) : prog.levels.find((x) => x.id === levelId);
   if (!l || !(await confirmReplaceActive())) return;
   enterFullscreen(); // zo vroeg mogelijk: moet binnen de tik van de gebruiker
   const exercises = l.items.map((it) => {
@@ -1700,7 +1876,7 @@ async function startPilates(levelId, programKey = 'pilates') {
   const segs = buildPlayerSegs(l, exercises);
   const now = Date.now();
   db.active = {
-    id: uid(), program: 'pilates', templateId: l.id, name: `${prog.short} · ${l.name}`,
+    id: uid(), program: 'pilates', templateId: l.id, name: `${prog.short} · ${l.name}${l.minutes ? ` · ${l.minutes} min` : ''}`,
     startedAt: new Date(now).toISOString(), finishedAt: null, hr: null, restSec: l.rest, exercises,
     run: { segs, i: 0, segStart: now, endAt: now + PREP_SEC * 1000, paused: false, pausedLeft: null },
   };
@@ -2386,6 +2562,42 @@ async function handleAction(action, btn) {
       db.settings.pilatesSwitch = Number(btn.dataset.sec);
       saveNow(); render();
       break;
+    case 'pilates-minutes':
+      db.settings.pilatesMinutes = btn.dataset.min === 'full' ? null : Number(btn.dataset.min);
+      saveNow(); render();
+      break;
+
+    /* Zelf toevoegen */
+    case 'add-own': openAddOwn(); break;
+    case 'own-prog': captureOwnDraft(); ownDraft.program = btn.dataset.v; renderAddOwn(); break;
+    case 'own-kind': captureOwnDraft(); ownDraft.kind = btn.dataset.v; renderAddOwn(); break;
+    case 'own-save': saveOwnExercise(); break;
+    case 'own-del': {
+      const ex = db.exercises.find((e) => e.id === btn.dataset.id);
+      if (!ex || !(await confirmDialog(`"${ex.name}" verwijderen? Al gedane trainingen blijven bewaard.`, 'Verwijderen', true))) break;
+      captureOwnDraft();
+      db.exercises = db.exercises.filter((e) => e !== ex);
+      for (const t of db.templates) t.items = t.items.filter((i) => i.exerciseId !== ex.id);
+      saveNow(); renderAddOwn();
+      break;
+    }
+
+    /* Voortgang */
+    case 'progress-tab': progressTab = btn.dataset.tab; render(); break;
+    case 'progress-ex': progressTab = 'ex'; progressEx = btn.dataset.id; closeSheet(); go('progress'); break;
+    case 'progress-metric': progressMetric = btn.dataset.metric; render(); break;
+    case 'weight-save': saveWeight(); break;
+    case 'weight-del':
+      bodyData().weights = bodyData().weights.filter((w) => w.date !== btn.dataset.date);
+      saveNow(); render();
+      break;
+    case 'measure-save': saveMeasures(); break;
+    case 'measure-chart': measureChartKey = btn.dataset.key; render(); break;
+    case 'measure-del':
+      if (!(await confirmDialog('Deze meting verwijderen?', 'Verwijderen', true))) break;
+      bodyData().measures = bodyData().measures.filter((m) => m.date !== btn.dataset.date);
+      saveNow(); render();
+      break;
     case 'reset-person': {
       const me = personById(personId);
       const choice = await choiceDialog(`Alle gegevens van ${me.name} wissen? Dit kan niet ongedaan worden (behalve met een backup).`, [
@@ -2563,6 +2775,12 @@ document.addEventListener('input', (e) => {
 
 document.addEventListener('change', (e) => {
   const el = e.target;
+  if (el.id === 'pilates-custom-min') {
+    const mn = Math.round(Number(el.value));
+    if (mn >= 5 && mn <= 90) { db.settings.pilatesMinutes = mn; saveNow(); render(); } else if (el.value) toast('Kies tussen 5 en 90 minuten');
+    return;
+  }
+  if (el.id === 'progress-ex') { progressEx = el.value; render(); return; }
   if (el.id === 'fb-photo' && el.files?.[0]) {
     feedback.photo = el.files[0];
     feedback.photoUrl = URL.createObjectURL(el.files[0]);

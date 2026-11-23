@@ -6,7 +6,7 @@
 // Let op: op GitHub Pages delen al je sites (gebruiker.github.io/*) dezelfde cache-opslag,
 // dus we ruimen ALLEEN caches met ons eigen voorvoegsel op.
 const CACHE_PREFIX = 'workout-tracker-';
-const CACHE = `${CACHE_PREFIX}v11`;
+const CACHE = `${CACHE_PREFIX}v12`;
 const NETWORK_TIMEOUT = 4000;
 const isOurOldCache = (k) => k !== CACHE && (k.startsWith(CACHE_PREFIX) || /^workout-v\d+$/.test(k));
 const ASSETS = [
@@ -15,6 +15,7 @@ const ASSETS = [
   './styles.css',
   './data.js',
   './app.js',
+  './progress.js',
   './manifest.webmanifest',
   './icons/icon.svg',
   './icons/icon-180.png',

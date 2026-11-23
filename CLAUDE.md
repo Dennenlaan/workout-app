@@ -89,6 +89,38 @@ nooit het gewicht van de andere kant tonen. `+ Set` voegt een L+R-paar toe. In d
 `side`-wissel → work R, met grote kant-badge.
 4. **Hartslag** (`view: 'heart'`): uitleg (geen live smartwatch-data in een PWA), profiel, zones, HR per sessie.
 
+## Voortgang (`view: 'progress'`, code in `progress.js`)
+- Ingang: kaart "📈 Voortgang" op het startscherm, chip "📈 Voortgang" bij een oefening (vanaf 2× gedaan) en
+  knop in het ⓘ-infoscherm. 3 tabs (`progressTab`):
+  - **Oefeningen**: kies oefening (select), metric "zwaarste set" of "volume (kg × reps)" (reps: max/totaal,
+    tijd: langste set, cardio: minuten/niveau). Eenzijdige oefeningen → 2 reeksen Links/Rechts. Trendtekst
+    "▲ +x sinds de eerste keer" + tabel. Data uit `db.history` (`exerciseSeries`).
+  - **Gewicht**: `db.body.weights = [{date:'YYYY-MM-DD', kg}]` (1 per dag, overschrijft). Weekgemiddelden per
+    week (ma–zo, `weeklyAverages`), verschil t.o.v. vorige week, grafiek: dagwaarden = stippen, weekgemiddelde =
+    lijn (punt op de gemiddelde meetdatum, nooit in de toekomst).
+  - **Metingen**: `db.body.measures = [{date, values:{borst, arm, taille, buik, heupen, bovenbeenR, bovenbeenL}}]`
+    (cm, per datum samengevoegd). SVG-lichaamsomtrek (vooraanzicht: haar LINKS staat rechts op het plaatje,
+    gelabeld R/L) met genummerde stippellijnen; focus op een veld ↔ lijn licht groen op (`MEASURES`, `bodySVG`).
+- **Grafiek** `lineChart({series, unit, title})`: inline SVG, één y-as, 2px lijnen, ≥8px markers met
+  2px ring, recessief grid, hover/tik-crosshair + tooltip (`CHARTS`), legenda bij ≥2 reeksen, alleen de
+  eerste lijn direct gelabeld. Kleuren `CHART_COLORS` roze/groen — gevalideerd met de dataviz-validator
+  (CVD ΔE 7,9 → daarom altijd vormverschil stippen vs. lijn + legenda). `signed()` voor ▲ +x / ▼ −x.
+- Let op: `sort()` werkt in-place — maak eerst een kopie voordat je reeksen sorteert (bug gevonden in v12).
+
+## Pilates op tijd
+- Keuze 10/15/20/30 min, "Volledig" of eigen tijd (5–90) → `db.settings.pilatesMinutes` (per profiel; null = volledig).
+- `buildTimedLevel(program, levelId, minutes)`: neemt rust/volgorde van het niveau, vult aan met andere
+  oefeningen uit hetzelfde programma, kiest sets (≤12 min: 1, ≤22: 2, anders 3; meer als alle oefeningen
+  op zijn) en daarna de werktijd 20–75 s die het dichtst bij de doeltijd uitkomt (`level.workSec`).
+  Getest: 54/66 combinaties binnen 1 min van de doeltijd.
+
+## Zelf apparaat/oefening toevoegen
+- Kaart "➕ Apparaat of oefening toevoegen" op het startscherm → `openAddOwn()`: bovenaan "Laten toevoegen
+  (met foto)" (= feedback), daaronder formulier: naam, waar (Basic-Fit / dumbbell / kettlebell), toestel,
+  spiergroep (`OWN_MUSCLES`), soort (`KINDS`), eenzijdig, tip. Opslag in `db.exercises` (per profiel) met
+  `muscle`, `uni`, `toestel`, `tip`; verwijderen haalt hem ook uit eigen schema's. Eigen Basic-Fit-oefeningen
+  verschijnen als zone "⭐ Zelf toegevoegd" (`gymZones()`), in pickers en bij ⇄ (via spiergroep-familie).
+
 ## Feedback & vragen (geen server)
 - Ingangen: 💬-knop op het startscherm, kaart "📸 Apparaat of oefening mist?" onderaan Basic-Fit,
   en "💬 Vraag of opmerking over deze oefening" in elk ⓘ-infoscherm (`data-action="feedback"`).
@@ -125,6 +157,7 @@ nooit het gewicht van de andere kant tonen. `+ Set` voegt een L+R-paar toe. In d
 | `index.html` | Shell: `#app`, `#timer` (rusttimer), `<dialog id="sheet">`, `<dialog id="confirm">`, `#toast`, file-input. Laadt `data.js` vóór `app.js`. |
 | `data.js` | **Vaste inhoud (catalogus), geen gebruikersdata**: `POSES`, `PILATES_EXERCISES`, `PILATES_LEVELS`, `GYM_EXERCISES`, `GYM_TEMPLATES`, `RUN_PLAN`, `HR_ZONES`, `CATALOG`. Inhoud aanpassen = hier. |
 | `app.js` | Alle logica: opslag/migratie, rendering per view, events, rusttimer, run-timer, herinneringen, backup. |
+| `progress.js` | Voortgang: grafieken (`lineChart`), oefening-progressie, lichaamsgewicht + weekgemiddelden, cm-metingen met lichaamsomtrek. Laadt ná app.js (gebruikt diens globals); `render()` roept `renderProgress` lui aan. |
 | `styles.css` | Styling + tokens. |
 | `sw.js` | Service worker **network-first** (`cache: 'no-cache'` → ETag/304; na 4 s of offline → cache) + `notificationclick`. Install haalt bestanden op met `cache: 'reload'`. **Verhoog bij elke release `CACHE` (`workout-tracker-vN`) én `APP_VERSION` in app.js (zelfde N)** en zet nieuwe bestanden in `ASSETS`. Ruimt alleen caches met prefix `workout-tracker-` op (gedeeld github.io-domein!). |
 | `.nojekyll` | Leeg bestand: GitHub Pages serveert alles letterlijk (geen Jekyll-verwerking). |
@@ -205,7 +238,9 @@ Backup-export = data van de huidige persoon (`workout-backup-<persoon>-<datum>.j
                     // "run": {segs,i,endAt,segStart,paused,pausedLeft}. Hardlopen: segs {type:'warmup'|'run'|'walk'|'cooldown', sec}.
                     // Pilates-speler: segs {type:'prep'|'work'|'rest', e (oefening-index), s (set-index), sec};
                     // een voorbij (of overgeslagen ⏭) work-segment zet die set op done (completeSeg).
-  "settings": { "restSeconds": 90, "pilatesWork": 40, "pilatesSwitch": 15 },
+  "settings": { "restSeconds": 90, "pilatesWork": 40, "pilatesSwitch": 15, "pilatesMinutes": 15 | null },
+  "body": { "weights": [ { "date": "2026-11-23", "kg": 65.8 } ],
+            "measures": [ { "date": "2026-11-23", "values": { "taille": 70.5, "heupen": 99.5 } } ] },
   "notes": { "bf-bulgarian": "Bank op stand 3" },   // vaste notitie per oefening-id (per profiel)
   // sets kunnen een "side": "L" | "R" hebben (eenzijdige oefeningen); entries een "uni": "been"|"arm"|"kant"
   // sessie-program: "gym" | "pilates" (bord én matje) | "run" | "dumbbell" | "kettlebell"
@@ -278,6 +313,10 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v12 (2026-11-23)**: pilates op tijd (10/15/20/30/eigen → automatisch passend schema); startscherm-kaarten
+  "➕ Apparaat of oefening toevoegen" (zelf toevoegen of via foto) en "📈 Voortgang"; voortgang met grafiek
+  per oefening (L/R apart), lichaamsgewicht met weekgemiddelden en cm-metingen met SVG-lichaamsomtrek;
+  nieuw bestand `progress.js`. Alles per profiel. Cache v12.
 - **v11 (2026-11-23)**: updates komen nu direct door: service worker network-first (met offline-
   fallback), automatische herlaad bij een nieuwe versie, update-check bij terugkeren in de app,
   versie + "Controleer op updates" op de geschiedenispagina.
