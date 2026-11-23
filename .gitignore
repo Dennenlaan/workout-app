@@ -1,0 +1,11 @@
+# Systeem- en editorbestanden
+Thumbs.db
+desktop.ini
+.DS_Store
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+# Lokale Claude-instellingen en backups horen niet in een openbare repo
+.claude/settings.local.json
+workout-backup-*.json

@@ -1,0 +1,3 @@
+# Altijd LF-regeleinden in de repo (voorkomt CRLF-ruis op Windows)
+* text=auto eol=lf
+*.png binary

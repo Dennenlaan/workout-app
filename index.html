@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light only">
+  <meta name="theme-color" content="#fde6ee">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Workout">
+  <title>Workout</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main id="app"></main>
+
+  <!-- Rusttimer (alleen zichtbaar tijdens een workout) -->
+  <div id="timer" class="timer" hidden>
+    <div class="timer-inner">
+      <div class="timer-top">
+        <button id="timer-display" class="timer-display" data-action="timer-toggle" aria-live="off">
+          <span id="timer-time" class="timer-time">1:30</span>
+          <span id="timer-label" class="timer-label">Rust · tik om te starten</span>
+        </button>
+      </div>
+      <div class="timer-progress"><div id="timer-bar"></div></div>
+      <div class="timer-controls">
+        <button class="tbtn" data-action="timer-adjust" data-delta="-15" aria-label="15 seconden minder">−15</button>
+        <button class="tbtn preset" data-action="timer-start" data-seconds="60">60s</button>
+        <button class="tbtn preset" data-action="timer-start" data-seconds="90">90s</button>
+        <button class="tbtn preset" data-action="timer-start" data-seconds="120">120s</button>
+        <button class="tbtn" data-action="timer-adjust" data-delta="15" aria-label="15 seconden meer">+15</button>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="sheet" class="sheet"></dialog>
+  <dialog id="confirm" class="sheet small"></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
