@@ -900,7 +900,33 @@ function renderGym() {
         <span class="small">Kies oefeningen, zet ze in je eigen volgorde en sla op om later te gebruiken.</span></span>
       </button>
     </div>
-    <button class="btn ghost block" data-action="start-empty">Of start een lege workout</button>`;
+    <button class="btn ghost block" data-action="start-empty">Of start een lege workout</button>
+
+    <h2>🏋️ Toestellen & zones</h2>
+    <p class="muted small">Alle Basic-Fit toestellen met de oefeningen die je erop kunt doen. Tik op een oefening voor uitleg.
+    Is een toestel bezet? Gebruik ⇄ Wissel in je workout.</p>
+    <div class="list">
+      ${GYM_EQUIPMENT.map((z) => `
+        <details class="card zone-card">
+          <summary><span class="zone-emoji">${z.emoji}</span><span class="grow"><strong>${esc(z.zone)}</strong><br>
+            <span class="muted small">${plural(Object.keys(z.items).length, 'toestel', 'toestellen')} · ${Object.values(z.items).flat().length} oefeningen</span></span><span class="chev">›</span></summary>
+          ${Object.entries(z.items).map(([toestel, ids]) => `
+            <div class="toestel">
+              <p class="toestel-name">${esc(toestel)}</p>
+              <div class="toestel-ex">
+                ${ids.map((id) => {
+                  const e = exById(id);
+                  return `<button class="toestel-pick" data-action="ex-info" data-id="${id}">
+                    ${thumb(id, { animate: false })}
+                    <span class="grow"><span class="pick-name">${esc(e.name)}</span>
+                    ${e.muscle ? `<span class="muscle-pill">${esc(e.muscle)}</span>` : ''}
+                    ${e.uni ? '<span class="uni-tag">↔ L/R</span>' : ''}</span>
+                  </button>`;
+                }).join('')}
+              </div>
+            </div>`).join('')}
+        </details>`).join('')}
+    </div>`;
 }
 
 /* ----- Hartslag ----- */
@@ -1070,7 +1096,15 @@ const HOLD_SHAPES = {
   bar: '<rect class="w-bar" x="-12" y="-2" width="24" height="4" rx="2"/>',
   footplate: '<rect class="w-plate" x="2" y="-22" width="6" height="44" rx="2"/>',
   footplate45: '<rect class="w-plate" x="2" y="-22" width="6" height="44" rx="2" transform="rotate(-45)"/>',
+  ball: '<circle class="w-plate" r="8"/><path class="w-hub" d="M-8,0 H8" stroke-width="1.5"/>',
+  roller: '<circle class="eq" r="8"/><circle class="w-hub" r="2.5"/>',
 };
+
+/** Toestel + zone bij een Basic-Fit-oefening (uit GYM_EQUIPMENT). */
+const EQUIPMENT_OF = {};
+for (const z of GYM_EQUIPMENT) {
+  for (const [toestel, ids] of Object.entries(z.items)) for (const id of ids) EQUIPMENT_OF[id] ??= { toestel, zone: z.zone, emoji: z.emoji };
+}
 
 function expandFrame(f) {
   if (f.length >= 22) return f;
@@ -1313,6 +1347,9 @@ function openExerciseInfo(id) {
       ${sheetHead(esc(ex.name))}
       <div class="fig-big">${thumb(id)}</div>
       ${ex.muscle ? `<p class="center"><span class="muscle-pill">💪 Traint vooral: ${esc(ex.muscle)}</span></p>` : ''}
+      ${ex.side ? `<p class="center"><span class="side-pill side-${ex.side}">${ex.side === 'L' ? '⬅ Linkerbeen' : 'Rechterbeen ➡'}</span></p>` : ''}
+      ${ex.uni ? `<p class="muted small center">↔ Eenzijdig: per set eerst ${sideLabel('L', ex.uni)}, dan ${sideLabel('R', ex.uni)}</p>` : ''}
+      ${EQUIPMENT_OF[id] ? `<p class="muted small center">📍 ${esc(EQUIPMENT_OF[id].toestel)} · ${esc(EQUIPMENT_OF[id].zone)}</p>` : ''}
       ${ex.equipment ? `<p class="muted small center">🧰 ${esc(ex.equipment)}</p>` : ''}
       ${ex.steps ? `<ol class="steps">${ex.steps.map((s) => `<li>${esc(s)}</li>`).join('')}</ol>` : ''}
       ${ex.tip ? `<p class="tip big-tip">💡 ${esc(ex.tip)}</p>` : ''}

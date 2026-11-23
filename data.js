@@ -191,6 +191,34 @@ const POSES = {
   'g-slrdl': { holds: [{ at: 'w', t: 'db' }], dur: 3.2, frames: [
     fr({ h: [100, 22], n: [100, 36], p: [100, 72], e: [102, 54], w: [103, 70], k: [97, 98], f: [93, 121], k2: [101, 98], f2: [100, 124] }),
     fr({ h: [141, 55], n: [128, 60], p: [96, 72], e: [128, 75], w: [128, 90], k: [72, 72], f: [47, 70], k2: [101, 98], f2: [100, 124] })] },
+  /* ----- v8: TikTok-bilfavorieten en Basic-Fit toestellen/zones ----- */
+  // Kas glute bridge: alleen het bovenste stuk van de hip thrust, kort en krachtig
+  'g-kas': { props: EQ.bench(14, 52, 92), holds: [{ at: 'p', t: 'plate', dy: -11 }], dur: 1.2, frames: [
+    fr({ h: [40, 82], n: [50, 90], p: [84, 100], e: [66, 90], w: [80, 92], k: [106, 96], f: [110, 124] }),
+    fr({ h: [40, 82], n: [50, 90], p: [86, 90], e: [66, 84], w: [82, 82], k: [108, 96], f: [110, 124] })] },
+  'g-lateralmachine': { front: true, props: EQ.pad(88, 44, 24, 44) + EQ.pad(82, 88, 36, 7), holds: [{ at: 'e', t: 'pad' }, { at: 'e2', t: 'pad' }], dur: 2.6, frames: [
+    fr({ h: [100, 38], n: [100, 52], p: [100, 88], e: [90, 64], w: [86, 76], e2: [110, 64], w2: [114, 76], k: [93, 96], f: [93, 120], k2: [107, 96], f2: [107, 120] }),
+    fr({ h: [100, 38], n: [100, 52], p: [100, 88], e: [84, 50], w: [72, 54], e2: [116, 50], w2: [128, 54], k: [93, 96], f: [93, 120], k2: [107, 96], f2: [107, 120] })] },
+  'g-lowerback': { props: EQ.seat(86, 98, false), holds: [{ at: 'n', t: 'pad', dx: -8 }], dur: 2.6, frames: [
+    fr({ ...SE, h: [114, 58], n: [104, 66], e: [110, 74], w: [114, 64] }),
+    fr({ ...SE, h: [76, 48], n: [80, 62], e: [86, 70], w: [94, 64] })] },
+  'g-tbar': { holds: [{ at: 'w', t: 'plate' }], dur: 2.4, frames: [
+    fr({ ...HINGE, e: [120, 75], w: [121, 90] }), fr({ ...HINGE, e: [106, 64], w: [114, 76] })] },
+  'g-kneeraise': { props: '<rect class="eq" x="84" y="18" width="8" height="72" rx="3"/><rect class="eq" x="92" y="48" width="26" height="6" rx="3"/><rect class="eq-line" x="86" y="90" width="4" height="34"/>', dur: 2.4, frames: [
+    fr({ h: [100, 20], n: [98, 34], p: [96, 70], e: [100, 50], w: [114, 48], k: [97, 96], f: [96, 118] }),
+    fr({ h: [100, 20], n: [98, 34], p: [96, 70], e: [100, 50], w: [114, 48], k: [120, 66], f: [118, 92] })] },
+  'g-slam': { holds: [{ at: 'w', t: 'ball' }], dur: 1.6, frames: [
+    fr({ ...ST, e: [103, 21], w: [104, 6] }), fr({ ...HINGE, e: [118, 74], w: [116, 90] })] },
+  'g-sled': { props: '<rect class="eq" x="136" y="96" width="30" height="24" rx="3"/><rect class="eq-line" x="130" y="120" width="42" height="4" rx="2"/><rect class="eq-line" x="134" y="58" width="4" height="40"/>', dur: 1.4, frames: [
+    fr({ h: [128, 46], n: [118, 54], p: [90, 78], e: [126, 64], w: [136, 62], k: [106, 100], f: [100, 124], k2: [84, 100], f2: [70, 122] }),
+    fr({ h: [128, 46], n: [118, 54], p: [90, 78], e: [126, 64], w: [136, 62], k: [86, 100], f: [72, 122], k2: [106, 100], f2: [100, 124] })] },
+  'g-trxrow': { props: '<rect class="eq-line" x="120" y="0" width="60" height="4" rx="2"/>', cables: [{ from: [150, 4], to: 'w' }], holds: [{ at: 'w', t: 'grip' }], dur: 2.4, frames: [
+    fr({ h: [80, 28], n: [84, 42], p: [96, 76], e: [98, 44], w: [112, 46], k: [104, 100], f: [112, 124] }),
+    fr({ h: [88, 28], n: [90, 42], p: [98, 76], e: [80, 54], w: [94, 46], k: [106, 100], f: [112, 124] })] },
+  'g-foamroll': { holds: [{ at: 'p', t: 'roller', dy: 9 }], dur: 2.4, frames: [
+    fr({ h: [72, 74], n: [74, 88], p: [90, 106], e: [66, 100], w: [60, 116], k: [114, 106], f: [138, 118] }),
+    fr({ h: [82, 74], n: [84, 88], p: [100, 106], e: [72, 100], w: [60, 116], k: [124, 106], f: [148, 118] })] },
+
   /* ----- v7: dumbbell-lijst, apparaten en leg press-varianten ----- */
   'g-dbhipthrust': { props: EQ.bench(14, 52, 92), holds: [{ at: 'p', t: 'db', dy: -8 }], dur: 2.6, frames: [
     fr({ h: [40, 82], n: [50, 90], p: [82, 112], e: [64, 100], w: [78, 104], k: [104, 96], f: [110, 124] }),
@@ -330,6 +358,8 @@ POSES['g-adduction'] = { ...POSES['g-abduction'], frames: [...POSES['g-abduction
 POSES['g-legext'] = { ...POSES['g-seatedlegcurl'], holds: [{ at: 'f', t: 'pad', dy: 3 }], frames: [...POSES['g-seatedlegcurl'].frames].reverse() };
 POSES['g-machinetri'] = { ...POSES['g-machinecurl'], frames: [...POSES['g-machinecurl'].frames].reverse() };
 POSES['g-pecdeck'] = { ...POSES['g-revfly'], frames: [...POSES['g-revfly'].frames].reverse() };
+// Back squat in het squat rack: zelfde beweging als de Smith-squat, maar met rack-palen en haken
+POSES['g-bbsquat'] = { ...POSES['g-smithsquat'], props: '<rect class="eq-line" x="66" y="10" width="6" height="114"/><rect class="eq-line" x="130" y="10" width="6" height="114"/><rect class="eq" x="62" y="40" width="14" height="4"/><rect class="eq" x="126" y="40" width="14" height="4"/>' };
 
 /** Eenzijdige oefeningen: per set eerst links, dan rechts. Waarde = welk lichaamsdeel ('been' | 'arm' | 'kant'). */
 const UNI = {
@@ -653,16 +683,74 @@ const GYM_MUSCLES = {
   'bf-biceps-machine': 'Biceps', 'bf-triceps-machine': 'Triceps', 'bf-pec-deck': 'Borst', 'bf-incline-press': 'Borst (bovenkant)',
   'bf-low-row': 'Rug (midden)', 'bf-close-pulldown': 'Rug (lats)', 'bf-hack-squat': 'Voorkant bovenbeen & bil',
   'bf-calf-raise': 'Kuiten', 'bf-kneel-kickback': 'Bil (gluteus maximus)',
+  'bf-kas-bridge': 'Bil (gluteus maximus)', 'bf-lateral-machine': 'Schouders (zijkant)', 'bf-lowerback-machine': 'Onderrug & bil',
+  'bf-pl-chest-press': 'Borst', 'bf-tbar-row': 'Rug (midden)', 'bf-high-row': 'Rug (lats)', 'bf-pendulum-squat': 'Voorkant bovenbeen & bil',
+  'bf-pl-shoulder-press': 'Schouders (voorkant)', 'bf-bb-squat': 'Voorkant bovenbeen & bil', 'bf-db-bench-press': 'Borst',
+  'bf-incline-db-press': 'Borst (bovenkant)', 'bf-knee-raise': 'Buik (onderkant)', 'bf-kb-swing': 'Bil & hamstrings',
+  'bf-slam': 'Core & full body', 'bf-sled-push': 'Bil & bovenbenen', 'bf-trx-row': 'Rug', 'bf-box-jump': 'Bil & bovenbenen',
+  'bf-foamroll': 'Herstel: bil & benen',
 };
+
+/** Basic-Fit toestellen en zones → welke oefeningen erbij horen (overzicht in de app + "📍 Toestel" in de uitleg). */
+const GYM_EQUIPMENT = [
+  { zone: 'Krachtapparaten met gewichtsblok', emoji: '🧱', items: {
+    'Chest press machine': ['bf-chest-press', 'bf-incline-press'],
+    'Pec deck / butterfly (fly & reverse fly)': ['bf-pec-deck', 'bf-reverse-fly'],
+    'Lat pulldown machine': ['bf-lat-pulldown', 'bf-close-pulldown'],
+    'Seated row machine': ['bf-seated-row', 'bf-low-row'],
+    'Shoulder press machine': ['bf-shoulder-press-machine'],
+    'Lateral raise machine': ['bf-lateral-machine'],
+    'Bicep curl machine': ['bf-biceps-machine'],
+    'Tricep extension / press machine': ['bf-triceps-machine'],
+    'Leg press machine': ['bf-leg-press', 'bf-lp-high', 'bf-sl-leg-press', 'bf-sl-leg-press-r', 'bf-lp-sl-high-L', 'bf-lp-sl-high-R'],
+    'Leg extension machine': ['bf-leg-extension'],
+    'Leg curl (zittend / liggend)': ['bf-seated-leg-curl', 'bf-leg-curl'],
+    'Hip abductor machine': ['bf-abduction', 'bf-abduction-lean'],
+    'Hip adductor machine': ['bf-adduction'],
+    'Glute / kickback machine': ['bf-glute-kickback-machine'],
+    'Calf raise machine': ['bf-calf-raise'],
+    'Ab crunch machine': ['bf-ab-crunch'],
+    'Lower back machine': ['bf-lowerback-machine'],
+    'Assisted pull-up / dip machine': ['bf-assisted-pullup', 'bf-dip-machine'],
+  } },
+  { zone: 'Plate-loaded apparaten (losse schijven)', emoji: '⚙️', items: {
+    'Plate-loaded chest press (vlak / incline)': ['bf-pl-chest-press'],
+    'T-bar row / high row': ['bf-tbar-row', 'bf-high-row'],
+    'Leg press 45° / hack squat / pendulum squat': ['bf-lp45-sl-L', 'bf-lp45-sl-R', 'bf-hack-squat', 'bf-pendulum-squat'],
+    'Plate-loaded shoulder press': ['bf-pl-shoulder-press'],
+    'Plate-loaded hip thrust machine': ['bf-hip-thrust-machine'],
+  } },
+  { zone: 'Racks, bankjes & kabels', emoji: '🏗️', items: {
+    'Squat rack / power rack': ['bf-bb-squat', 'bf-hip-thrust'],
+    'Smith machine (multipress)': ['bf-smith-squat', 'bf-smith-hip-thrust', 'bf-smith-lunge'],
+    'Kabelstation / functional trainer': ['bf-cable-kickback', 'bf-kneel-kickback', 'bf-diag-kickback', 'bf-cable-abduction', 'bf-pull-through',
+      'bf-cable-curl', 'bf-rope-hammer', 'bf-pushdown', 'bf-pushdown-bar', 'bf-oh-cable-ext', 'bf-cable-lateral', 'bf-face-pull',
+      'bf-cable-chest-press', 'bf-cable-crunch'],
+    'Bankjes (vlak / verstelbaar)': ['bf-db-bench-press', 'bf-incline-db-press', 'bf-kas-bridge', 'bf-bulgarian', 'bf-sl-hip-thrust', 'bf-step-up'],
+    'Back extension-bank': ['bf-back-ext'],
+    "Pull-up bar / dip station / captain's chair": ['bf-knee-raise'],
+  } },
+  { zone: 'Losse gewichten & functionele zone', emoji: '🏃‍♀️', items: {
+    'Dumbbells': ['bf-db-curl', 'bf-hammer-curl', 'bf-db-shoulder-press', 'bf-arnold', 'bf-lateral-raise', 'bf-db-oh-ext', 'bf-db-kickback',
+      'bf-db-rdl', 'bf-b-stance-rdl', 'bf-sl-rdl', 'bf-walking-lunge', 'bf-curtsy', 'bf-goblet-squat', 'bf-sumo-squat-db', 'bf-lateral-stepup'],
+    'Barbells & schijven': ['bf-bb-rdl', 'bf-bb-glute-bridge'],
+    'EZ-curl bar / tricep bar': ['bf-ez-curl'],
+    'Kettlebells & medicine/slam balls': ['bf-kb-swing', 'bf-sl-kb-rdl', 'bf-sumo-dl', 'bf-slam'],
+    'Slee & kunstgrasbaan': ['bf-sled-push'],
+    'TRX / suspension trainer': ['bf-trx-row'],
+    'Plyobox': ['bf-box-jump'],
+    'Matje, foamroller & weerstandsbanden': ['bf-frog-pump', 'bf-donkey-kick', 'bf-fire-hydrant', 'bf-clamshell', 'bf-band-walk', 'bf-side-plank-raise', 'bf-foamroll'],
+  } },
+];
 /** Extra wisselopties (⇄) zodat er altijd een alternatief is als een apparaat bezet is. */
 const GYM_EXTRA_ALTS = {
-  'bf-hip-thrust': ['bf-bb-glute-bridge', 'bf-frog-pump'], 'bf-hip-thrust-machine': ['bf-bb-glute-bridge', 'bf-frog-pump'],
-  'bf-smith-hip-thrust': ['bf-bb-glute-bridge'], 'bf-bb-glute-bridge': ['bf-hip-thrust', 'bf-hip-thrust-machine', 'bf-frog-pump'],
+  'bf-hip-thrust-machine': ['bf-bb-glute-bridge', 'bf-frog-pump', 'bf-kas-bridge'],
+  'bf-smith-hip-thrust': ['bf-bb-glute-bridge', 'bf-kas-bridge'],
   'bf-frog-pump': ['bf-bb-glute-bridge', 'bf-hip-thrust'],
   'bf-bulgarian': ['bf-smith-lunge', 'bf-step-up'], 'bf-smith-lunge': ['bf-bulgarian', 'bf-walking-lunge', 'bf-step-up'],
   'bf-step-up': ['bf-lateral-stepup', 'bf-bulgarian'], 'bf-walking-lunge': ['bf-smith-lunge'],
   'bf-donkey-kick': ['bf-cable-kickback', 'bf-glute-kickback-machine'],
-  'bf-back-ext': ['bf-pull-through'], 'bf-pull-through': ['bf-back-ext', 'bf-bb-rdl'],
+  'bf-pull-through': ['bf-back-ext', 'bf-bb-rdl'],
   'bf-bb-rdl': ['bf-b-stance-rdl', 'bf-pull-through'], 'bf-db-rdl': ['bf-b-stance-rdl'],
   'bf-b-stance-rdl': ['bf-sl-rdl', 'bf-db-rdl'],
   'bf-leg-press': ['bf-lp-high', 'bf-sl-leg-press', 'bf-sl-leg-press-r', 'bf-lp-sl-high-L', 'bf-lp-sl-high-R',
@@ -670,8 +758,13 @@ const GYM_EXTRA_ALTS = {
   'bf-glute-kickback-machine': ['bf-donkey-kick', 'bf-kneel-kickback'], 'bf-cable-kickback': ['bf-donkey-kick', 'bf-kneel-kickback'],
   'bf-hammer-curl': ['bf-biceps-machine'], 'bf-cable-curl': ['bf-biceps-machine'],
   'bf-pushdown': ['bf-triceps-machine'], 'bf-oh-cable-ext': ['bf-triceps-machine'],
-  'bf-chest-press': ['bf-incline-press', 'bf-pec-deck'], 'bf-seated-row': ['bf-low-row'], 'bf-lat-pulldown': ['bf-close-pulldown'],
-  'bf-smith-squat': ['bf-goblet-squat', 'bf-leg-press'], 'bf-goblet-squat': ['bf-smith-squat', 'bf-leg-press', 'bf-sumo-squat-db'],
+  'bf-chest-press': ['bf-incline-press', 'bf-pec-deck', 'bf-pl-chest-press', 'bf-db-bench-press'],
+  'bf-seated-row': ['bf-low-row', 'bf-tbar-row', 'bf-trx-row'], 'bf-lat-pulldown': ['bf-close-pulldown', 'bf-high-row'],
+  'bf-lateral-raise': ['bf-lateral-machine'], 'bf-back-ext': ['bf-pull-through', 'bf-lowerback-machine'],
+  'bf-shoulder-press-machine': ['bf-pl-shoulder-press'], 'bf-smith-squat': ['bf-bb-squat', 'bf-pendulum-squat', 'bf-goblet-squat', 'bf-leg-press'],
+  'bf-ab-crunch': ['bf-knee-raise'], 'bf-hip-thrust': ['bf-kas-bridge', 'bf-bb-glute-bridge', 'bf-frog-pump'],
+  'bf-bb-glute-bridge': ['bf-kas-bridge', 'bf-hip-thrust', 'bf-hip-thrust-machine', 'bf-frog-pump'],
+  'bf-goblet-squat': ['bf-smith-squat', 'bf-leg-press', 'bf-sumo-squat-db'],
   'bf-abduction': ['bf-band-walk'], 'bf-abduction-lean': ['bf-abduction', 'bf-clamshell'],
   'bf-lateral-stepup': ['bf-step-up'], 'bf-sumo-dl': ['bf-sumo-squat-db', 'bf-goblet-squat'],
   'bf-sumo-squat-db': ['bf-sumo-dl', 'bf-goblet-squat', 'bf-adduction'], 'bf-adduction': ['bf-sumo-squat-db'],
@@ -721,14 +814,14 @@ const GYM_EXERCISES = [
   { id: 'bf-bb-rdl', name: 'Romanian deadlift (halterstang)', pose: 'g-rdl-bb', tip: 'Stang langs je benen, heupen naar achteren, rug recht.', alts: ['bf-db-rdl'] },
   { id: 'bf-bulgarian', name: 'Bulgarian split squat (dumbbells)', pose: 'g-bulgarian', tip: 'Iets voorover leunen = meer bil. Achterste voet op een verhoging.', alts: ['bf-walking-lunge'] },
   { id: 'bf-glute-kickback-machine', name: 'Glute kickback machine', pose: 'g-cablekick', tip: 'Rustig terug, niet doorzwaaien met je onderrug.', alts: ['bf-cable-kickback'] },
-  { id: 'bf-cable-kickback', name: 'Cable kickback', pose: 'g-cablekick', tip: 'Enkelband aan de kabel, been recht naar achteren, bil aanspannen.', alts: ['bf-glute-kickback-machine'] },
+  { id: 'bf-cable-kickback', name: 'Cable glute kickback', pose: 'g-cablekick', tip: 'Enkelband aan de kabel, been recht naar achteren, bil aanspannen.', alts: ['bf-glute-kickback-machine'] },
   { id: 'bf-back-ext', name: 'Back extension (bil-focus)', pose: 'g-backext', tip: 'Ronde bovenrug, voeten naar buiten, knijp je billen om omhoog te komen.' },
   { id: 'bf-walking-lunge', name: 'Walking lunges (dumbbells)', pose: 'g-lunge-db', tip: 'Grote stappen, voorste knie boven je enkel.', alts: ['bf-bulgarian'] },
   { id: 'bf-leg-curl', name: 'Leg curl (liggend)', pose: 'g-legcurl', tip: 'Langzaam terug laten komen (3 tellen).', alts: ['bf-seated-leg-curl'] },
   { id: 'bf-seated-leg-curl', name: 'Leg curl zittend (beenbuig-apparaat)', pose: 'g-seatedlegcurl', tip: 'Kussen net boven je hielen, bovenbeenkussen stevig vast. Buig je benen onder de stoel en laat in 3 tellen terugkomen.', alts: ['bf-leg-curl'] },
   // Bil 2 — gluteus medius (zijkant)
   { id: 'bf-abduction', name: 'Hip abduction machine (rechtop)', pose: 'g-abduction', tip: 'Rechtop zitten, knieën rustig naar buiten duwen, langzaam terug.', alts: ['bf-cable-abduction'] },
-  { id: 'bf-cable-abduction', name: 'Cable abduction (staand)', pose: 'g-cableabd', tip: 'Enkelband, been zijwaarts weg, bovenlichaam stil.', alts: ['bf-abduction'] },
+  { id: 'bf-cable-abduction', name: 'Cable abduction / side kick (staand)', pose: 'g-cableabd', tip: 'Enkelband, been zijwaarts weg, bovenlichaam stil.', alts: ['bf-abduction'] },
   { id: 'bf-band-walk', name: 'Lateral band walk (mini-band)', pose: 'g-bandwalk', tip: 'Kleine squat, band boven je knieën, zijwaartse stappen zonder de band te laten verslappen.', alts: ['bf-cable-abduction'] },
   { id: 'bf-curtsy', name: 'Curtsy lunge (dumbbells)', pose: 'g-curtsy', tip: 'Stap schuin achter je standbeen langs, heupen recht naar voren.', alts: ['bf-walking-lunge'] },
   { id: 'bf-sl-rdl', name: 'Single-leg RDL (dumbbell)', pose: 'g-slrdl', tip: 'Heupen recht houden, standbeen licht gebogen.', alts: ['bf-sl-kb-rdl', 'bf-db-rdl'] },
@@ -765,6 +858,25 @@ const GYM_EXERCISES = [
   { id: 'bf-hack-squat', name: 'Hack squat machine', pose: 'g-smithsquat', tip: 'Rug en schouders tegen de kussens; voeten hoger op het platform = meer bil.' },
   { id: 'bf-calf-raise', name: 'Calf raise machine', pose: 'g-calf', tip: 'Voorvoeten op de rand, hielen rustig laten zakken en zo hoog mogelijk op je tenen komen.' },
   { id: 'bf-kneel-kickback', name: 'Kneeling cable kickback', pose: 'g-kneelkick', tip: 'Op handen en knieën met enkelband aan de lage kabel; been naar achteren-boven strekken, bil aanspannen.' },
+  // v8 — TikTok-bilfavoriet + ontbrekende Basic-Fit toestellen/zones
+  { id: 'bf-kas-bridge', name: 'Kas glute bridge', pose: 'g-kas', tip: 'Bovenrug tegen de bank, stang op je heupen. Alleen het bovenste stuk: kort en krachtig omhoog, 1 tel knijpen, niet helemaal zakken. Kin naar je borst.' },
+  { id: 'bf-lateral-machine', name: 'Lateral raise machine', pose: 'g-lateralmachine', tip: 'Ellebogen tegen de kussens, til tot schouderhoogte; schouders laag houden.' },
+  { id: 'bf-lowerback-machine', name: 'Lower back machine', pose: 'g-lowerback', tip: 'Rustig naar achteren strekken tot rechtop, niet doorduwen naar hol; langzaam terug.' },
+  { id: 'bf-pl-chest-press', name: 'Plate-loaded chest press (vlak of incline)', pose: 'g-chestpress', tip: 'Schijven gelijk verdelen; schouderbladen naar achteren, druk recht vooruit.' },
+  { id: 'bf-tbar-row', name: 'T-bar row (plate-loaded)', pose: 'g-tbar', tip: 'Borst op het kussen of rechte rug; trek de handgrepen naar je buik.' },
+  { id: 'bf-high-row', name: 'High row (plate-loaded)', pose: 'g-pulldown', tip: 'Trek van hoog-voor naar je borst, ellebogen naar achteren-beneden.' },
+  { id: 'bf-pendulum-squat', name: 'Pendulum squat', pose: 'g-smithsquat', tip: 'Rug tegen het kussen, voeten iets naar voren; zak diep en gecontroleerd.' },
+  { id: 'bf-pl-shoulder-press', name: 'Plate-loaded shoulder press', pose: 'g-seatpress', tip: 'Rug tegen het kussen, druk recht omhoog zonder hol te trekken.' },
+  { id: 'bf-bb-squat', name: 'Back squat (squat rack / power rack)', pose: 'g-bbsquat', tip: 'Stang op je bovenrug, borst omhoog; zet de veiligheidsstangen net onder je diepste punt.' },
+  { id: 'bf-db-bench-press', name: 'Dumbbell bench press (vlak bankje)', pose: 'g-dbbench', tip: 'Voeten plat, schouderbladen samen; dumbbells vanaf borsthoogte recht omhoog.' },
+  { id: 'bf-incline-db-press', name: 'Incline dumbbell press (verstelbaar bankje)', pose: 'g-dbbench', tip: 'Bank op ± 30°; druk richting je ogen, ellebogen iets naar binnen.' },
+  { id: 'bf-knee-raise', name: "Knee raise (captain's chair / dip station)", pose: 'g-kneeraise', tip: 'Onderarmen op de kussens, rug tegen het kussen; trek je knieën op zonder te zwaaien.' },
+  { id: 'bf-kb-swing', name: 'Kettlebell swing', pose: 'g-kbswing', tip: 'Kracht uit je heupen: billen naar achteren en krachtig naar voren knijpen; armen sturen alleen.' },
+  { id: 'bf-slam', name: 'Slam ball slams (medicine ball)', pose: 'g-slam', tip: 'Bal boven je hoofd, krachtig op de grond slaan met je buik aangespannen; door je heupen zakken.' },
+  { id: 'bf-sled-push', name: 'Slee duwen (kunstgrasbaan)', pose: 'g-sled', tip: 'Handen hoog op de palen, lichaam schuin; korte krachtige stappen via je voorvoet.' },
+  { id: 'bf-trx-row', name: 'TRX row (suspension trainer)', pose: 'g-trxrow', tip: 'Lichaam als een plank, trek je borst naar de handvatten; meer schuin = zwaarder.' },
+  { id: 'bf-box-jump', name: 'Box step-up / box jump (plyobox)', pose: 'g-latstep', tip: 'Begin met step-ups; springen alleen met zachte landing op de hele voet.' },
+  { id: 'bf-foamroll', name: 'Foamrollen (bil & benen)', pose: 'g-foamroll', tip: 'Rol rustig 30–60 sec per plek over bil, hamstring en bovenbeen; adem door.' },
 ].map((e) => ({
   ...e, program: 'gym', kind: 'weights', muscle: GYM_MUSCLES[e.id], uni: UNI[e.id],
   alts: [...new Set([...(e.alts || []), ...(GYM_EXTRA_ALTS[e.id] || [])])].filter((a) => a !== e.id),

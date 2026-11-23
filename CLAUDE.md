@@ -62,7 +62,15 @@ een kleine link onderaan het hardloopschema + HR-invoer bij het afronden.
    (**Linkerbeen**) en `bf-sl-leg-press-r` (**Rechterbeen**) met `side: 'L'|'R'`-badge,
    `bf-seated-leg-curl` (hamstrings, beenbuig-apparaat). v6 voegde ±13 extra (vooral bil-)oefeningen
    toe; `GYM_EXTRA_ALTS` koppelt ze als ⇄-alternatief aan de schema-oefeningen (apparaat bezet → wisselen).
-   Catalogus v7: **147 oefeningen** (gym 80 incl. apparaten voor armen/borst/rug/benen en ±32 bil; pilatesbord
+   **Toestellen & zones** (`GYM_EQUIPMENT` in data.js): 4 zones (krachtapparaten met gewichtsblok,
+   plate-loaded, racks/bankjes/kabels, losse gewichten & functionele zone) met 37 toestellen; **elke
+   gym-oefening hoort bij een toestel** (controle: geen gym-id buiten `GYM_EQUIPMENT`). Getoond als
+   uitklapbaar overzicht onderaan Basic-Fit en als "📍 toestel · zone" in het ⓘ-infoscherm
+   (`EQUIPMENT_OF`). Nieuwe gym-oefening toevoegen ⇒ óók in `GYM_EQUIPMENT` zetten.
+   TikTok-bilfavorieten: Kas glute bridge, frog pumps, B-stance RDL, curtsy lunge, cable glute kickback,
+   cable abduction/side kick — eenzijdige varianten via L/R-rijen (één oefening, per set Linker- en
+   Rechterbeen), leg press-varianten als aparte L/R-oefeningen (zo gevraagd).
+   Catalogus v8: **165 oefeningen** (gym 98). Catalogus v7 was: 147 oefeningen (gym 80 incl. apparaten voor armen/borst/rug/benen en ±32 bil; pilatesbord
    18; mat 13; dumbbell 28; kettlebell 8). De dumbbell-lijst van de gebruiker (sumo/goblet/Bulgarian squat,
    walking lunges, RDL, step-ups, (single-leg) hip thrust, crunches, weighted marches, plank drags, glute
    bridge met overhead stretch, alternating glute bridge, bicycle crunches, bent-over/single-arm/renegade
@@ -244,6 +252,11 @@ Submap-test zoals GitHub Pages: kopie in `<map>/workout-app/` en serveer `<map>`
 - Ideeën: progressiegrafieken, PR-detectie, Web Bluetooth-hartslag, push-meldingen via server.
 
 ## Changelog
+- **v8 (2026-11-23)**: Basic-Fit toestellen- & zonelijst (37 toestellen, alle gym-oefeningen gekoppeld,
+  overzicht + "📍 toestel" in uitleg); 18 nieuwe gym-oefeningen: Kas glute bridge, lateral raise machine,
+  lower back machine, plate-loaded chest/shoulder press, T-bar/high row, pendulum squat, back squat (rack),
+  dumbbell bench/incline press, knee raise (captain's chair), kettlebell swing, slam balls, slee, TRX row,
+  plyobox, foamrollen; hernoemd: "Cable glute kickback", "Cable abduction / side kick". Cache v8.
 - **v7 (2026-11-23)**: Basic-Fit zonder rustbalk; slim wisselen (geen dubbele oefeningen, alternatieven
   per spiergroep, L/R-omzetting); 7 leg press-varianten (voet hoog/middelhoog, 1 of 2 benen, schuin
   zittend, Linker-/Rechterbeen); apparaten biceps/triceps-machine, pec deck, incline press, low row,
